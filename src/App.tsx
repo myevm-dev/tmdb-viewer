@@ -11,6 +11,10 @@ const MovieDetail = lazy(() => import('./pages/MovieDetail'));
 const MyList = lazy(() => import('./pages/MyList'));
 const FanClubs = lazy(() => import('./pages/FanClubs'));
 const People = lazy(() => import('./pages/People'));
+const Shows = lazy(() => import('./pages/Shows'));
+const TvDetail = lazy(() => import('./pages/TvDetail'));
+const Music = lazy(() => import('./pages/Music'));
+const ArtistDetail = lazy(() => import('./pages/ArtistDetail'));
 const PersonDetail = lazy(() => import('./pages/PersonDetail'));
 
 function TopLoader() {
@@ -43,6 +47,14 @@ export default function App() {
               element={<Navigate to="/people/popular" replace />}
             />
             <Route path="/people/:category" element={<People />} />
+            <Route
+              path="/shows"
+              element={<Navigate to="/shows/trending" replace />}
+            />
+            <Route path="/shows/:category" element={<Shows />} />
+            <Route path="/tv/:tvId" element={<TvDetail />} />
+            <Route path="/music" element={<Music />} />
+            <Route path="/artist/:artistId" element={<ArtistDetail />} />
             <Route path="/person/:personId" element={<PersonDetail />} />
             <Route path="/my-list" element={<MyList />} />
             <Route
@@ -70,7 +82,11 @@ export default function App() {
             TMDB
           </a>
           . This product uses the TMDB API but is not endorsed or certified by
-          TMDB.
+          TMDB. Music data and previews from{' '}
+          <a href="https://www.deezer.com" target="_blank" rel="noreferrer">
+            Deezer
+          </a>
+          .
         </span>
         <span>
           Fan clubs deploy via{' '}

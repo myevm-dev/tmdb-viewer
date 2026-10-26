@@ -109,7 +109,7 @@ export async function launchFanClub(
     salt: hexlify(randomBytes(32)) as `0x${string}`,
     metadata: {
       description: input.description.trim(),
-      socialMediaUrls: [{ platform: 'website', url: input.subject.tmdbUrl }],
+      socialMediaUrls: [{ platform: 'website', url: input.subject.sourceUrl }],
     },
     context: {
       interface: FAN_CLUB_INTERFACE,

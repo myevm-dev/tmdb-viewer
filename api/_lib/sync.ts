@@ -20,7 +20,8 @@ export function rpc() {
 /* Parsing                                                             */
 /* ------------------------------------------------------------------ */
 
-type Subject = { kind: 'movie' | 'person'; id: number };
+export type SubjectKind = 'movie' | 'tv' | 'person' | 'artist';
+type Subject = { kind: SubjectKind; id: number };
 
 function parseJson(s: string): Record<string, any> | null {
   try {
@@ -39,16 +40,20 @@ export function subjectFromContext(
   const ctx = parseJson(contextJson);
   if (!ctx || !config.interfaces.includes(String(ctx.interface ?? '')))
     return null;
-  const m = /(movie|person)\/(\d+)/.exec(String(ctx.messageId ?? ''));
-  if (m) return { kind: m[1] as Subject['kind'], id: Number(m[2]) };
+  const m = /(movie|tv|person|artist)\/(\d+)/.exec(String(ctx.messageId ?? ''));
+  if (m) return { kind: m[1] as SubjectKind, id: Number(m[2]) };
   if (/^\d+$/.test(String(ctx.id ?? '')))
     return { kind: 'movie', id: Number(ctx.id) };
   const meta = parseJson(metadataJson);
   for (const u of meta?.socialMediaUrls ?? []) {
-    const mm = /themoviedb\.org\/(movie|person)\/(\d+)/.exec(
+    const mm = /themoviedb\.org\/(movie|tv|person)\/(\d+)/.exec(
       String(u?.url ?? ''),
     );
-    if (mm) return { kind: mm[1] as Subject['kind'], id: Number(mm[2]) };
+    if (mm) return { kind: mm[1] as SubjectKind, id: Number(mm[2]) };
+    const dz = /deezer\.com\/(?:[a-z]{2}\/)?artist\/(\d+)/.exec(
+      String(u?.url ?? ''),
+    );
+    if (dz) return { kind: 'artist', id: Number(dz[1]) };
   }
   return null;
 }

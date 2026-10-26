@@ -2,21 +2,23 @@
 
 **Every fandom gets a cast.**
 
-Fancast is a streaming-style browser for movies and the people who make them (TMDB), with an on-chain **Fan Club launchpad**: anyone can launch a fan token for any film or star through the [Clanker](https://www.clanker.world) v4 factory, with its own Uniswap v4 pool on Base.
+Fancast is a streaming-style browser for movies, TV shows and the people who make them (TMDB) plus music artists (Deezer), with an on-chain **Fan Club launchpad**: anyone can launch a fan token for any film, show, star or artist through the [Clanker](https://www.clanker.world) v4 factory, with its own Uniswap v4 pool on Base.
 
 ## Features
 
 - **Streaming UI** — rotating hero with trailers, horizontal shelves (Trending, Top 10, Now Playing, Popular, Coming Soon), hover-expand tiles, detail pages with cast and recommendations, infinite-scroll browse and search, and My List (saved locally; favorites from the old version carry over).
 - **People** — actors and directors get the same treatment as films: a People section (popular / trending), person pages with bio, socials, "Known for" and "Latest & upcoming" rows, a People tab in search, clickable cast and director credits, and **Follow** to track people in My List.
+- **TV shows** — TMDB TV catalog with Trending / Popular / Top Rated / On The Air / Airing Today, show pages with seasons, cast (episode counts), creators, rating, trailer and recommendations; save shows to My List. People pages include TV credits (talk and reality appearances filtered out).
+- **Music** — Deezer artist charts by genre, artist pages with 30-second previews of top tracks, albums, "Fans also like", follow, and a Music tab in search.
 - **Wallet (ethers.js v6)** — EIP-6963 multi-wallet discovery with a `window.ethereum` fallback, silent reconnect, Base network switch/add, ETH balance, copy/explorer/disconnect menu.
 - **Fan Clubs**
-  - Every movie **and person** page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
+  - Every movie, TV show, person and music artist page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
   - Launches build the deploy call with `clanker-sdk/v4` (`getDeployTransaction`), encode it with ethers, gas-estimate (surfaces reverts before the wallet prompt), send through the connected signer, and parse `TokenCreated` from the receipt.
   - Options: name, ticker, description, poster/backdrop image, launch curve (Standard / Tiered / Premiere), swap fee (flat 1% or dynamic 1–5%), optional creator buy, optional creator vault with lockup.
-  - Tokens are tagged with social context `interface: "Fancast"` (clubs tagged with the earlier `"TMDB Fan Club"` are still discovered) and `messageId: movie/<tmdbId>` or `person/<tmdbId>`, so clubs launched by anyone are discovered through the Clanker API and mapped back to their film or person.
+  - Tokens are tagged with social context `interface: "Fancast"` (clubs tagged with the earlier `"TMDB Fan Club"` are still discovered) and `messageId: movie/<id>`, `tv/<id>`, `person/<id>` (TMDB) or `artist/<id>` (Deezer), so clubs launched by anyone are discovered and mapped back to their subject.
   - Live price, market cap, 24h change, volume, liquidity and trades come from DexScreener, with an embedded chart. **When no pool or chart exists yet, designed placeholders are shown** (detail panel and launchpad cards).
   - Connected wallets see their stake in each club.
-  - `/fan-clubs` launchpad: totals, Films / People filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.
+  - `/fan-clubs` launchpad: totals, Films / TV / People / Music filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.
 
 ## Live market data (indexer)
 
@@ -70,6 +72,10 @@ Copy `.env.example` to `.env` to configure:
 | `VITE_CLANKER_API` | `/clanker-api` | Clanker API base (proxied, see below) |
 | `VITE_PLATFORM_FEE_RECIPIENT` | — | Optional: route a share of LP rewards to the platform |
 | `VITE_PLATFORM_FEE_BPS` | `2000` | Platform share in bps (max 5000) when a recipient is set |
+
+### API proxies
+
+Deezer's catalog API has no CORS headers either, so it is proxied at `/deezer-api` the same way (Vite in dev, `vercel.json` on Vercel). On hosts without the proxy, music rows hide themselves.
 
 ### Clanker API proxy
 

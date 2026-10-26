@@ -75,7 +75,9 @@ export default function Navbar() {
             Home
           </NavLink>
           <NavLink to="/browse/popular">Movies</NavLink>
+          <NavLink to="/shows">TV</NavLink>
           <NavLink to="/people">People</NavLink>
+          <NavLink to="/music">Music</NavLink>
           <NavLink to="/fan-clubs" className="nav__fan">
             Fan Clubs
           </NavLink>
@@ -97,7 +99,7 @@ export default function Navbar() {
             <input
               ref={inputRef}
               value={query}
-              placeholder="Titles, people, years"
+              placeholder="Movies, shows, people, artists"
               onChange={(e) => update(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
@@ -126,7 +128,9 @@ export default function Navbar() {
           Home
         </NavLink>
         <NavLink to="/browse/popular">Movies</NavLink>
+        <NavLink to="/shows">TV</NavLink>
         <NavLink to="/people">People</NavLink>
+        <NavLink to="/music">Music</NavLink>
         <NavLink to="/fan-clubs">Fan Clubs</NavLink>
         <NavLink to="/my-list">My List</NavLink>
       </nav>

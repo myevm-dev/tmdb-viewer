@@ -189,7 +189,7 @@ export default function PersonDetail() {
         {known.length > 0 && (
           <Row title="Known for">
             {known.map((m) => (
-              <MovieTile key={m.id} movie={m} />
+              <MovieTile key={`${m.media_type ?? 'movie'}-${m.id}`} movie={m} />
             ))}
           </Row>
         )}
@@ -197,7 +197,7 @@ export default function PersonDetail() {
         {latest.length > 0 && (
           <Row title="Latest & upcoming">
             {latest.map((m) => (
-              <MovieTile key={m.id} movie={m} />
+              <MovieTile key={`${m.media_type ?? 'movie'}-${m.id}`} movie={m} />
             ))}
           </Row>
         )}

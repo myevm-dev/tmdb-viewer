@@ -47,14 +47,17 @@ export default function MovieGrid({
     return <div className="empty">{empty ?? 'No movies found'}</div>;
 
   // De-dupe — TMDB pagination occasionally repeats items across pages.
-  const seen = new Set<number>();
-  const unique = movies.filter((m) => !seen.has(m.id) && seen.add(m.id));
+  const seen = new Set<string>();
+  const keyOf = (m: Movie) => `${m.media_type ?? 'movie'}-${m.id}`;
+  const unique = movies.filter(
+    (m) => !seen.has(keyOf(m)) && seen.add(keyOf(m)),
+  );
 
   return (
     <>
       <div className="grid">
         {unique.map((m) => (
-          <MovieTile key={m.id} movie={m} />
+          <MovieTile key={keyOf(m)} movie={m} />
         ))}
         {loadingMore &&
           Array.from({ length: 4 }, (_, i) => (

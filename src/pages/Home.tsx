@@ -10,7 +10,14 @@ import { RocketIcon } from '../components/Icons';
 import MyListRow, { FollowingRow } from './MyListRow';
 import PersonCard from '../components/PersonCard';
 import { knownFor } from '../components/PeopleGrid';
-import { getPeople } from '../lib/tmdb';
+import {
+  getPeople,
+  getTvCategory,
+  TV_CATEGORIES,
+  type TvCategory,
+} from '../lib/tmdb';
+import { ArtistCard } from '../components/PersonCard';
+import { getChartArtists } from '../lib/deezer';
 
 function useCategory(c: Category) {
   return useQuery({
@@ -66,9 +73,64 @@ function FanClubsRow() {
           {tokens.length ? 'Launch another' : 'Start the first fan club'}
         </strong>
         <span className="muted">
-          Pick any film or star and deploy its fan token on Uniswap v4.
+          Pick any film, show, star or artist and deploy its fan token on
+          Uniswap v4.
         </span>
       </Link>
+    </Row>
+  );
+}
+
+function TvRow({ category, rank }: { category: TvCategory; rank?: boolean }) {
+  const q = useQuery({
+    queryKey: ['tv-category', category, 1],
+    queryFn: () => getTvCategory(category, 1),
+    staleTime: 10 * 60_000,
+  });
+  if (rank) {
+    return (
+      <Row
+        variant="rank"
+        title="Top 10 TV Shows"
+        href={`/shows/${category}`}
+        loading={q.isLoading}
+      >
+        {q.data?.results.slice(0, 10).map((m, i) => (
+          <RankTile key={m.id} movie={m} rank={i + 1} />
+        ))}
+      </Row>
+    );
+  }
+  return (
+    <Row
+      title={TV_CATEGORIES[category].title}
+      href={`/shows/${category}`}
+      loading={q.isLoading}
+    >
+      {q.data?.results.map((m) => (
+        <MovieTile key={m.id} movie={m} />
+      ))}
+    </Row>
+  );
+}
+
+function ArtistsRow() {
+  const q = useQuery({
+    queryKey: ['dz-chart', 0],
+    queryFn: () => getChartArtists(0, 60),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+  if (q.isError) return null; // music catalog not reachable on this host
+  return (
+    <Row title="Top Artists" href="/music" variant="card" loading={q.isLoading}>
+      {q.data?.data.slice(0, 24).map((a, i) => (
+        <ArtistCard
+          key={a.id}
+          artist={a}
+          subtitle={`#${a.position ?? i + 1} on the chart`}
+        />
+      ))}
     </Row>
   );
 }
@@ -115,11 +177,15 @@ export default function Home() {
             <RankTile key={m.id} movie={m} rank={i + 1} />
           ))}
         </Row>
+        <TvRow category="trending" />
         <MyListRow />
         <FollowingRow />
+        <ArtistsRow />
         <PeopleRow />
         <CategoryRow category="now_playing" />
+        <TvRow category="top_rated" rank />
         <CategoryRow category="popular" />
+        <TvRow category="on_the_air" />
         <CategoryRow category="upcoming" />
       </div>
     </div>

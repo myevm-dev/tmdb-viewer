@@ -1,5 +1,10 @@
 import { Link } from 'react-router-dom';
-import { subjectPath, type FanClubToken, type TokenMarket } from './data';
+import {
+  KIND_LABEL,
+  subjectPath,
+  type FanClubToken,
+  type TokenMarket,
+} from './data';
 import { ChartPlaceholder } from './TokenChart';
 import { pct, timeAgo, usd } from '../lib/format';
 
@@ -33,7 +38,7 @@ export default function FanClubCard({ token, market, rank }: Props) {
           <strong title={token.name}>{token.name}</strong>
           <span className="muted small">
             <span className="mono">${token.symbol}</span> ·{' '}
-            {token.kind === 'person' ? 'Person' : 'Film'}
+            {KIND_LABEL[token.kind] ?? 'Film'}
           </span>
         </div>
         <div className="fc-card__chart">

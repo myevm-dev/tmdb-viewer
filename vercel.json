@@ -20,6 +20,10 @@
       "destination": "https://www.clanker.world/api/:path*"
     },
     {
+      "source": "/deezer-api/:path*",
+      "destination": "https://api.deezer.com/:path*"
+    },
+    {
       "source": "/((?!api/|assets/|favicon|manifest|robots).*)",
       "destination": "/index.html"
     }

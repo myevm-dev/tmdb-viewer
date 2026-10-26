@@ -1,12 +1,13 @@
 import { getAddress } from 'ethers';
 import { config } from './config.js';
 import { getDb } from './db.js';
+import type { SubjectKind } from './sync.js';
 
 export type Sort = 'trending' | 'new' | 'top' | 'gainers' | 'volume';
 
 interface Row {
   address: string;
-  kind: 'movie' | 'person';
+  kind: SubjectKind;
   subject_id: number;
   name: string;
   symbol: string;
@@ -99,7 +100,7 @@ function trendScore(r: Row, ethUsd: number) {
 
 export interface ClubStats {
   address: string;
-  kind: 'movie' | 'person';
+  kind: SubjectKind;
   subjectId: number;
   name: string;
   symbol: string;
@@ -177,8 +178,8 @@ export async function ethUsdNow() {
 
 export async function listClubs(opts: {
   sort?: Sort;
-  kind?: 'movie' | 'person';
-  subject?: { kind: 'movie' | 'person'; id: number };
+  kind?: SubjectKind;
+  subject?: { kind: SubjectKind; id: number };
   limit?: number;
 }) {
   const db = await getDb();

@@ -62,6 +62,12 @@ export default defineConfig(({ mode }) => {
       proxy: {
         // Clanker's public API doesn't send CORS headers, so we proxy it in dev
         // (and via vercel.json rewrites in production).
+        // Deezer's catalog API has no CORS either.
+        '/deezer-api': {
+          target: 'https://api.deezer.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/deezer-api/, ''),
+        },
         '/clanker-api': {
           target: 'https://www.clanker.world',
           changeOrigin: true,

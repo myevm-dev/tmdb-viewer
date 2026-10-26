@@ -2637,3 +2637,177 @@ main {
     padding: 8px 12px;
   }
 }
+
+/* ---------- TV + music ---------- */
+
+button.pill {
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+}
+.pills--scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 22px;
+  scrollbar-width: none;
+}
+.pills--scroll::-webkit-scrollbar {
+  display: none;
+}
+.pills--scroll .pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.season,
+.album {
+  flex: 0 0 auto;
+  width: 150px;
+  display: grid;
+  gap: 2px;
+  font-size: 13.5px;
+  transition: transform 0.25s var(--ease);
+}
+.album:hover {
+  transform: translateY(-4px);
+}
+.season img,
+.season__ph {
+  width: 150px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin-bottom: 8px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.album img {
+  width: 150px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin-bottom: 8px;
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--line);
+}
+.season__ph {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--muted);
+}
+.season strong,
+.album strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail__poster--round {
+  border-radius: 50% !important;
+  aspect-ratio: 1 !important;
+  object-position: center;
+}
+.detail--artist .detail__shade {
+  background: radial-gradient(120% 90% at 20% 100%, rgba(8, 8, 11, 0.6), rgba(8, 8, 11, 0.95)),
+    linear-gradient(0deg, var(--bg) 0%, rgba(8, 8, 11, 0) 40%);
+}
+
+.tracks {
+  padding: 0 var(--gutter);
+  max-width: 980px;
+}
+.tracks h2 {
+  font-size: clamp(20px, 2vw, 26px);
+  margin-bottom: 12px;
+}
+.tracks ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tracks li {
+  display: grid;
+  grid-template-columns: 40px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.tracks li:hover,
+.tracks li.is-playing {
+  background: var(--surface);
+}
+.tracks li img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.track__play {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+.track__play svg {
+  display: none;
+}
+.track__num {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.tracks li:hover .track__play svg,
+.tracks li.is-playing .track__play svg {
+  display: block;
+}
+.tracks li:hover .track__num,
+.tracks li.is-playing .track__num {
+  display: none;
+}
+.tracks li.is-playing .track__play {
+  color: var(--gold);
+}
+.track__title {
+  display: grid;
+  min-width: 0;
+}
+.track__title strong,
+.track__title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tracks li.is-playing .track__title strong {
+  color: var(--gold);
+}
+.track__dur {
+  font-variant-numeric: tabular-nums;
+}
+.badge--xs {
+  font-size: 9.5px;
+  padding: 0 4px;
+  border-radius: 3px;
+  margin-right: 2px;
+}
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 40px;
+}
+@media (hover: none) {
+  .track__play svg {
+    display: block;
+  }
+  .track__num {
+    display: none;
+  }
+}

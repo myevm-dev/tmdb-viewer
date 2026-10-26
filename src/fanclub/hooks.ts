@@ -7,6 +7,7 @@ import {
   mergeFanClubs,
   useLocalFanClubs,
   type FanClubToken,
+  type SubjectKind,
 } from './data';
 import { CHAIN } from './config';
 import { useWallet } from '../wallet/WalletProvider';
@@ -38,22 +39,26 @@ export function useAllFanClubs(sortBy: 'market-cap' | 'new' = 'new') {
   };
 }
 
-/** Fan clubs for a single movie. The earliest launch is the "official" one. */
-export function useMovieFanClubs(movieId: number, title?: string) {
+/** Fan clubs for one movie or person. The earliest launch is the "official" one. */
+export function useSubjectFanClubs(
+  kind: SubjectKind,
+  subjectId: number,
+  name?: string,
+) {
   const local = useLocalFanClubs();
   const remote = useQuery({
-    queryKey: ['fanclubs', 'movie', movieId],
-    queryFn: () => fetchClankerFanClubs({ q: title, limit: 20 }),
-    enabled: !!title,
+    queryKey: ['fanclubs', kind, subjectId],
+    queryFn: () => fetchClankerFanClubs({ q: name, limit: 20 }),
+    enabled: !!name,
     staleTime: 30_000,
     retry: 1,
   });
   const clubs = useMemo(
     () =>
       mergeFanClubs(remote.data?.tokens ?? [], local)
-        .filter((t) => t.movieId === movieId)
+        .filter((t) => t.kind === kind && t.subjectId === subjectId)
         .sort(byCreated),
-    [remote.data, local, movieId],
+    [remote.data, local, kind, subjectId],
   );
   return {
     clubs,

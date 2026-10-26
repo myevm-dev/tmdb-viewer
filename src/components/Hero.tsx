@@ -8,7 +8,7 @@ import {
   releaseYear,
   type Movie,
 } from '../lib/tmdb';
-import { useFanClubMovieIds } from '../fanclub/useFanClubMovieIds';
+import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
 import { InfoIcon, PlayIcon, RocketIcon, StarIcon, UsersIcon } from './Icons';
 import { ListButton } from './MovieTile';
 import TrailerModal from './TrailerModal';
@@ -20,7 +20,7 @@ export default function Hero({ movies }: { movies: Movie[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [trailer, setTrailer] = useState<string | null>(null);
-  const clubs = useFanClubMovieIds();
+  const clubs = useFanClubSubjects();
   const movie = featured[index];
 
   const details = useQuery({
@@ -43,7 +43,7 @@ export default function Hero({ movies }: { movies: Movie[] }) {
 
   const trailerKey = details.data ? pickTrailer(details.data)?.key : undefined;
   const genres = details.data?.genres.slice(0, 3).map((g) => g.name) ?? [];
-  const hasClub = clubs.has(movie.id);
+  const hasClub = clubs.has('movie', movie.id);
 
   return (
     <section

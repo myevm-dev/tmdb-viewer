@@ -10,32 +10,33 @@ import {
   type LiquidityPreset,
 } from './deploy';
 import { CHAIN, PLATFORM_FEE, links } from './config';
-import { backdropUrl, posterUrl, type MovieDetails } from '../lib/tmdb';
+import type { FanSubject } from './subject';
 import { suggestSymbol, shortAddress } from '../lib/format';
 import { CheckIcon, ExternalIcon, RocketIcon } from '../components/Icons';
 import type { FanClubToken } from './data';
 
 interface Props {
-  movie: MovieDetails;
+  subject: FanSubject;
   open: boolean;
   onClose: () => void;
   onLaunched?: (t: FanClubToken) => void;
 }
 
 export default function LaunchModal({
-  movie,
+  subject,
   open,
   onClose,
   onLaunched,
 }: Props) {
   const wallet = useWallet();
-  const poster = posterUrl(movie, 'w500');
-  const backdrop = backdropUrl(movie, 'w780');
+  const poster = subject.image;
+  const backdrop = subject.altImage;
+  const what = subject.kind === 'person' ? 'fans of' : 'the fandom of';
 
-  const [name, setName] = useState(`${movie.title} Fan Club`);
-  const [symbol, setSymbol] = useState(suggestSymbol(movie.title));
+  const [name, setName] = useState(`${subject.name} Fan Club`);
+  const [symbol, setSymbol] = useState(suggestSymbol(subject.name));
   const [description, setDescription] = useState(
-    `The official fan club token for ${movie.title}. Hold it to rep the fandom.`,
+    `The official fan club token for ${what} ${subject.name}. Hold it to rep the club.`,
   );
   const [image, setImage] = useState(poster ?? backdrop ?? '');
   const [liquidity, setLiquidity] = useState<LiquidityPreset>('Standard');
@@ -80,8 +81,7 @@ export default function LaunchModal({
       const token = await launchFanClub(
         signer,
         {
-          movieId: movie.id,
-          movieTitle: movie.title,
+          subject,
           name,
           symbol,
           description,
@@ -112,7 +112,7 @@ export default function LaunchModal({
       size="lg"
       title={
         <span className="launch-title">
-          <RocketIcon size={20} /> Launch the {movie.title} Fan Club
+          <RocketIcon size={20} /> Launch the {subject.name} Fan Club
         </span>
       }
     >
@@ -145,7 +145,7 @@ export default function LaunchModal({
               Transaction <ExternalIcon size={14} />
             </a>
             <button className="btn btn--ghost" onClick={onClose}>
-              Back to the film
+              Back to the club
             </button>
           </div>
         </div>

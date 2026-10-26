@@ -4,10 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { useAllFanClubs, useMarkets } from '../fanclub/hooks';
 import FanClubCard from '../fanclub/FanClubCard';
 import { CHAIN } from '../fanclub/config';
-import { posterUrl, releaseYear, searchMovies } from '../lib/tmdb';
+import {
+  posterUrl,
+  profileUrl,
+  releaseYear,
+  searchMovies,
+  searchPeople,
+} from '../lib/tmdb';
 import { usd } from '../lib/format';
 import { RocketIcon, SearchIcon } from '../components/Icons';
-import { useFanClubMovieIds } from '../fanclub/useFanClubMovieIds';
+import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
+import { subjectPath, type SubjectKind } from '../fanclub/data';
 
 type Sort = 'market-cap' | 'new' | 'gainers';
 
@@ -19,8 +26,10 @@ export default function FanClubs() {
   const markets = useMarkets(tokens.map((t) => t.address));
   const m = (a: string) => markets.data?.[a.toLowerCase()];
 
+  const [kind, setKind] = useState<'all' | SubjectKind>('all');
+
   const sorted = useMemo(() => {
-    const list = [...tokens];
+    const list = tokens.filter((t) => kind === 'all' || t.kind === kind);
     if (sort === 'new')
       list.sort(
         (a, b) =>
@@ -39,7 +48,7 @@ export default function FanClubs() {
       );
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokens, sort, markets.data]);
+  }, [tokens, sort, kind, markets.data]);
 
   const totals = useMemo(() => {
     let mcap = 0;
@@ -58,14 +67,14 @@ export default function FanClubs() {
         <div className="lp-hero__text">
           <span className="hero__eyebrow">Launchpad · {CHAIN.name}</span>
           <h1>
-            Every film deserves a <em>fan club.</em>
+            Every film and star deserves a <em>fan club.</em>
           </h1>
           <p className="muted">
-            Launch a fan token for any movie in one transaction. Each club gets
-            its own Uniswap v4 pool via Clanker, locked liquidity, and creator
-            rewards on every trade.
+            Launch a fan token for any movie, actor or director in one
+            transaction. Each club gets its own Uniswap v4 pool via Clanker,
+            locked liquidity, and creator rewards on every trade.
           </p>
-          <MoviePicker />
+          <SubjectPicker />
         </div>
         <div className="lp-stats">
           <div>
@@ -85,7 +94,11 @@ export default function FanClubs() {
 
       <section className="how">
         {[
-          ['01', 'Pick a film', 'Search any movie in the TMDB catalog.'],
+          [
+            '01',
+            'Pick a film or star',
+            'Search any movie or person in the TMDB catalog.',
+          ],
           [
             '02',
             'Launch the club',
@@ -107,22 +120,41 @@ export default function FanClubs() {
 
       <div className="page__head">
         <h2>All fan clubs</h2>
-        <div className="segmented">
-          {(
-            [
-              ['market-cap', 'Top'],
-              ['new', 'New'],
-              ['gainers', 'Gainers'],
-            ] as [Sort, string][]
-          ).map(([k, label]) => (
-            <button
-              key={k}
-              className={sort === k ? 'is-active' : ''}
-              onClick={() => setSort(k)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="lp-filters">
+          <div className="segmented">
+            {(
+              [
+                ['all', 'All'],
+                ['movie', 'Films'],
+                ['person', 'People'],
+              ] as ['all' | SubjectKind, string][]
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                className={kind === k ? 'is-active' : ''}
+                onClick={() => setKind(k)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="segmented">
+            {(
+              [
+                ['market-cap', 'Top'],
+                ['new', 'New'],
+                ['gainers', 'Gainers'],
+              ] as [Sort, string][]
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                className={sort === k ? 'is-active' : ''}
+                onClick={() => setSort(k)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -155,7 +187,7 @@ export default function FanClubs() {
           <RocketIcon size={32} />
           <strong>No fan clubs yet</strong>
           <span className="muted">
-            Search for a film above and launch the very first one.
+            Search for a film or actor above and launch the very first one.
           </span>
         </div>
       )}
@@ -163,13 +195,21 @@ export default function FanClubs() {
   );
 }
 
-function MoviePicker() {
+type PickerItem = {
+  kind: SubjectKind;
+  id: number;
+  name: string;
+  meta: string;
+  img: string | null;
+};
+
+function SubjectPicker() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [debounced, setDebounced] = useState('');
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-  const clubs = useFanClubMovieIds();
+  const clubs = useFanClubSubjects();
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 250);
@@ -183,11 +223,40 @@ function MoviePicker() {
     return () => document.removeEventListener('mousedown', onDoc);
   }, []);
 
-  const results = useQuery({
+  const enabled = debounced.length > 1;
+  const movies = useQuery({
     queryKey: ['search', debounced, 'picker'],
     queryFn: () => searchMovies(debounced),
-    enabled: debounced.length > 1,
+    enabled,
   });
+  const people = useQuery({
+    queryKey: ['search-people', debounced, 'picker'],
+    queryFn: () => searchPeople(debounced),
+    enabled,
+  });
+
+  // Interleave by popularity so the best match leads, whichever kind it is.
+  const items: PickerItem[] = useMemo(() => {
+    const m = (movies.data?.results ?? []).slice(0, 5).map((x, i) => ({
+      kind: 'movie' as const,
+      id: x.id,
+      name: x.title,
+      meta: `Film${releaseYear(x) ? ` · ${releaseYear(x)}` : ''}`,
+      img: posterUrl(x, 'w185'),
+      rank: i,
+    }));
+    const p = (people.data?.results ?? []).slice(0, 4).map((x, i) => ({
+      kind: 'person' as const,
+      id: x.id,
+      name: x.name,
+      meta: x.known_for_department ?? 'Person',
+      img: profileUrl(x.profile_path),
+      rank: i + ((x.popularity ?? 0) > 20 ? -0.5 : 0.5),
+    }));
+    return [...m, ...p].sort((a, b) => a.rank - b.rank);
+  }, [movies.data, people.data]);
+
+  const loading = movies.isLoading || people.isLoading;
 
   return (
     <div className="picker" ref={wrap}>
@@ -195,7 +264,7 @@ function MoviePicker() {
         <SearchIcon size={18} />
         <input
           value={q}
-          placeholder="Search a movie to launch its fan club…"
+          placeholder="Search a movie or actor to launch a fan club…"
           onChange={(e) => {
             setQ(e.target.value);
             setOpen(true);
@@ -203,34 +272,45 @@ function MoviePicker() {
           onFocus={() => setOpen(true)}
         />
       </div>
-      {open && debounced.length > 1 && (
+      {open && enabled && (
         <ul className="picker__list">
-          {results.isLoading && (
+          {loading && !items.length && (
             <li className="muted picker__status">Searching…</li>
           )}
-          {results.data?.results.length === 0 && (
+          {!loading && items.length === 0 && (
             <li className="muted picker__status">No matches</li>
           )}
-          {results.data?.results.slice(0, 7).map((m) => (
-            <li key={m.id}>
-              <button
-                onClick={() => navigate(`/movie/${m.id}?launch=1#fan-club`)}
-              >
-                {posterUrl(m, 'w185') ? (
-                  <img src={posterUrl(m, 'w185')!} alt="" />
-                ) : (
-                  <span className="picker__ph" />
-                )}
-                <span className="picker__title">
-                  {m.title}
-                  <span className="muted small">{releaseYear(m) ?? ''}</span>
-                </span>
-                <span className={`chip ${clubs.has(m.id) ? '' : 'chip--gold'}`}>
-                  {clubs.has(m.id) ? 'View club' : 'Launch'}
-                </span>
-              </button>
-            </li>
-          ))}
+          {items.map((it) => {
+            const has = clubs.has(it.kind, it.id);
+            return (
+              <li key={`${it.kind}-${it.id}`}>
+                <button
+                  onClick={() =>
+                    navigate(
+                      `${subjectPath(it.kind, it.id)}${has ? '' : '?launch=1'}#fan-club`,
+                    )
+                  }
+                >
+                  {it.img ? (
+                    <img
+                      src={it.img}
+                      alt=""
+                      className={it.kind === 'person' ? 'is-round' : ''}
+                    />
+                  ) : (
+                    <span className="picker__ph" />
+                  )}
+                  <span className="picker__title">
+                    {it.name}
+                    <span className="muted small">{it.meta}</span>
+                  </span>
+                  <span className={`chip ${has ? '' : 'chip--gold'}`}>
+                    {has ? 'View club' : 'Launch'}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

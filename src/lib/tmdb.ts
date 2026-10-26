@@ -125,8 +125,10 @@ export const backdropUrl = (
   size: BackdropSize = 'w1280',
 ) => (m.backdrop_path ? `${BASE_IMG_URL}${size}${m.backdrop_path}` : null);
 
-export const profileUrl = (path: string | null) =>
-  path ? `${BASE_IMG_URL}w185${path}` : null;
+export const profileUrl = (
+  path: string | null | undefined,
+  size: 'w185' | 'h632' | 'original' = 'w185',
+) => (path ? `${BASE_IMG_URL}${size}${path}` : null);
 
 export const releaseYear = (m: Pick<Movie, 'release_date'>) =>
   m.release_date ? new Date(m.release_date).getFullYear() : null;
@@ -152,3 +154,90 @@ export function certification(details: MovieDetails) {
 
 export const tmdbMovieUrl = (id: MovieID) =>
   `https://www.themoviedb.org/movie/${id}`;
+
+export const tmdbPersonUrl = (id: PersonID) =>
+  `https://www.themoviedb.org/person/${id}`;
+
+/* ------------------------------------------------------------------ */
+/* People                                                              */
+/* ------------------------------------------------------------------ */
+
+export type PersonID = number;
+
+export interface Person {
+  id: PersonID;
+  name: string;
+  profile_path: string | null;
+  known_for_department?: string;
+  popularity?: number;
+  gender?: number;
+  known_for?: (Movie & { media_type?: string; name?: string })[];
+}
+
+export interface PersonCredit extends Movie {
+  character?: string;
+  job?: string;
+  credit_id: string;
+  popularity?: number;
+}
+
+export interface PersonDetails extends Person {
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  also_known_as: string[];
+  homepage: string | null;
+  imdb_id: string | null;
+  movie_credits?: { cast: PersonCredit[]; crew: PersonCredit[] };
+  external_ids?: {
+    instagram_id?: string | null;
+    twitter_id?: string | null;
+    tiktok_id?: string | null;
+    imdb_id?: string | null;
+  };
+}
+
+export const PEOPLE_CATEGORIES = {
+  popular: { title: 'Popular People', path: 'person/popular' },
+  trending: { title: 'Trending People', path: 'trending/person/week' },
+} as const;
+
+export type PeopleCategory = keyof typeof PEOPLE_CATEGORIES;
+
+export const isPeopleCategory = (v: string | undefined): v is PeopleCategory =>
+  !!v && v in PEOPLE_CATEGORIES;
+
+export const getPeople = (category: PeopleCategory, page = 1) =>
+  call<Page<Person>>(PEOPLE_CATEGORIES[category].path, { page });
+
+export const getPerson = (id: PersonID) =>
+  call<PersonDetails>(`person/${id}`, {
+    append_to_response: 'movie_credits,external_ids',
+  });
+
+export const searchPeople = (query: string, page = 1) =>
+  call<Page<Person>>('search/person', { query, page, include_adult: 'false' });
+
+export const age = (birthday: string | null, deathday?: string | null) => {
+  if (!birthday) return null;
+  const end = deathday ? new Date(deathday) : new Date();
+  const b = new Date(birthday);
+  let a = end.getFullYear() - b.getFullYear();
+  if (end < new Date(end.getFullYear(), b.getMonth(), b.getDate())) a--;
+  return a;
+};
+
+/** A person's films as cast or crew, de-duplicated and sorted by popularity. */
+export function filmography(p: PersonDetails, limit = 40) {
+  const seen = new Map<number, PersonCredit>();
+  const all = [
+    ...(p.movie_credits?.cast ?? []),
+    ...(p.movie_credits?.crew ?? []),
+  ];
+  for (const c of all) if (!seen.has(c.id)) seen.set(c.id, c);
+  return [...seen.values()]
+    .filter((c) => c.backdrop_path || c.poster_path)
+    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .slice(0, limit);
+}

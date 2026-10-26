@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { MovieDetails } from '../lib/tmdb';
-import { useMarkets, useMovieFanClubs, useTokenBalance } from './hooks';
+import type { FanSubject } from './subject';
+import { useMarkets, useSubjectFanClubs, useTokenBalance } from './hooks';
 import TokenChart from './TokenChart';
 import LaunchModal from './LaunchModal';
 import { CHAIN, links } from './config';
@@ -15,14 +15,18 @@ import {
 import { useWallet } from '../wallet/WalletProvider';
 import type { FanClubToken } from './data';
 
-export default function FanClubPanel({ movie }: { movie: MovieDetails }) {
-  const { clubs, primary, isLoading } = useMovieFanClubs(movie.id, movie.title);
+export default function FanClubPanel({ subject }: { subject: FanSubject }) {
+  const { clubs, primary, isLoading } = useSubjectFanClubs(
+    subject.kind,
+    subject.id,
+    subject.name,
+  );
   const [launchOpen, setLaunchOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const active = clubs.find((c) => c.address === selected) ?? primary;
   const [params, setParams] = useSearchParams();
 
-  // Deep link from the launchpad picker: /movie/:id?launch=1
+  // Deep link from the launchpad picker: /movie/:id?launch=1 or /person/:id?launch=1
   useEffect(() => {
     if (params.get('launch') !== '1' || isLoading) return;
     if (!primary) setLaunchOpen(true);
@@ -34,7 +38,7 @@ export default function FanClubPanel({ movie }: { movie: MovieDetails }) {
     <section className="fanclub" id="fan-club">
       <header className="section-head">
         <h2>
-          <span className="chip chip--gold">FAN CLUB</span> {movie.title}
+          <span className="chip chip--gold">FAN CLUB</span> {subject.name}
         </h2>
         {clubs.length > 1 && (
           <div className="segmented segmented--sm">
@@ -59,11 +63,11 @@ export default function FanClubPanel({ movie }: { movie: MovieDetails }) {
       ) : active ? (
         <ActiveClub token={active} />
       ) : (
-        <EmptyClub movie={movie} onLaunch={() => setLaunchOpen(true)} />
+        <EmptyClub subject={subject} onLaunch={() => setLaunchOpen(true)} />
       )}
 
       <LaunchModal
-        movie={movie}
+        subject={subject}
         open={launchOpen}
         onClose={() => setLaunchOpen(false)}
         onLaunched={(t) => setSelected(t.address)}
@@ -73,10 +77,10 @@ export default function FanClubPanel({ movie }: { movie: MovieDetails }) {
 }
 
 function EmptyClub({
-  movie,
+  subject,
   onLaunch,
 }: {
-  movie: MovieDetails;
+  subject: FanSubject;
   onLaunch: () => void;
 }) {
   return (
@@ -87,7 +91,7 @@ function EmptyClub({
         </div>
         <h3>No fan club yet</h3>
         <p className="muted">
-          Be the first to start the official <strong>{movie.title}</strong> fan
+          Be the first to start the official <strong>{subject.name}</strong> fan
           club. Launch a fan token with its own Uniswap v4 pool on {CHAIN.name}{' '}
           — you earn a share of every trade's fees, forever.
         </p>

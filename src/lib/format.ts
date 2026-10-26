@@ -65,12 +65,14 @@ export function suggestSymbol(title: string) {
   if (!words.length) return 'FAN';
   const joined = words.join('');
   if (joined.length <= 8) return joined;
-  if (words.length > 1)
-    return (
-      words
-        .map((w) => w[0])
-        .join('')
-        .slice(0, 6) || joined.slice(0, 8)
-    );
+  if (words.length > 1) {
+    const initials = words
+      .map((w) => w[0])
+      .join('')
+      .slice(0, 6);
+    // Two-word names ("Cillian Murphy") read better as the surname.
+    if (initials.length >= 3) return initials;
+    return words[words.length - 1].slice(0, 8);
+  }
   return joined.slice(0, 8);
 }

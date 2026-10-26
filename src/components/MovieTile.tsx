@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { backdropUrl, posterUrl, releaseYear, type Movie } from '../lib/tmdb';
 import { useMyList } from '../lib/myList';
-import { useFanClubMovieIds } from '../fanclub/useFanClubMovieIds';
+import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
 import { CheckIcon, PlusIcon, StarIcon } from './Icons';
 
 export function ListButton({
@@ -32,7 +32,7 @@ export function ListButton({
 /** Landscape 16:9 tile — the main streaming-style card. */
 export function MovieTile({ movie }: { movie: Movie }) {
   const img = backdropUrl(movie, 'w780') ?? posterUrl(movie, 'w500');
-  const hasClub = useFanClubMovieIds().has(movie.id);
+  const hasClub = useFanClubSubjects().has('movie', movie.id);
   return (
     <Link to={`/movie/${movie.id}`} className="tile">
       <div className="tile__media">

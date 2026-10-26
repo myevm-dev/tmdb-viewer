@@ -1,10 +1,16 @@
+import { useMemo } from 'react';
 import { getAddress, isAddress } from 'ethers';
 import { createStore } from '../lib/storage';
 import { CHAIN, CLANKER_API, FAN_CLUB_INTERFACE } from './config';
 
+/** What a fan club is for: a film or a person (actor, director…). */
+export type SubjectKind = 'movie' | 'person';
+
 export interface FanClubToken {
   address: string;
-  movieId: number;
+  kind: SubjectKind;
+  /** TMDB id of the movie or person. */
+  subjectId: number;
   name: string;
   symbol: string;
   image: string;
@@ -43,7 +49,16 @@ const registry = createStore<Record<string, FanClubToken>>(
 export const saveLocalFanClub = (t: FanClubToken) =>
   registry.set((prev) => ({ ...prev, [t.address.toLowerCase()]: t }));
 
-export const useLocalFanClubs = () => Object.values(registry.use());
+// Entries saved before people were supported only carry `movieId`.
+const upgrade = (t: FanClubToken & { movieId?: number }): FanClubToken =>
+  t.kind ? t : { ...t, kind: 'movie', subjectId: t.subjectId ?? t.movieId! };
+
+export const useLocalFanClubs = () => {
+  const state = registry.use();
+  return useMemo(() => Object.values(state).map(upgrade), [state]);
+};
+
+export const subjectPath = (kind: SubjectKind, id: number) => `/${kind}/${id}`;
 
 /* ------------------------------------------------------------------ */
 /* Clanker public API — discovers fan clubs launched by anyone.        */
@@ -64,21 +79,26 @@ const parseMaybeJson = (v: unknown): Json | null => {
   return null;
 };
 
-/** Extracts the TMDB movie id we stamp into the token's social context / metadata. */
-export function movieIdFromToken(t: Json): number | null {
+/** Extracts the TMDB movie/person we stamp into the token's social context / metadata. */
+export function subjectFromToken(
+  t: Json,
+): { kind: SubjectKind; id: number } | null {
   const ctx = parseMaybeJson(t.social_context ?? t.socialContext ?? t.context);
   if (ctx) {
     const iface = String(ctx.interface ?? '');
     if (iface && iface !== FAN_CLUB_INTERFACE) return null;
-    const fromMsg = /movie\/(\d+)/.exec(String(ctx.messageId ?? ''));
-    if (fromMsg) return Number(fromMsg[1]);
-    if (/^\d+$/.test(String(ctx.id ?? ''))) return Number(ctx.id);
+    const fromMsg = /(movie|person)\/(\d+)/.exec(String(ctx.messageId ?? ''));
+    if (fromMsg)
+      return { kind: fromMsg[1] as SubjectKind, id: Number(fromMsg[2]) };
+    // Early launches stored the bare movie id.
+    if (/^\d+$/.test(String(ctx.id ?? '')))
+      return { kind: 'movie', id: Number(ctx.id) };
   }
   const meta = parseMaybeJson(t.metadata);
   const urls: { url?: string }[] = meta?.socialMediaUrls ?? [];
   for (const u of urls) {
-    const m = /themoviedb\.org\/movie\/(\d+)/.exec(u.url ?? '');
-    if (m) return Number(m[1]);
+    const m = /themoviedb\.org\/(movie|person)\/(\d+)/.exec(u.url ?? '');
+    if (m) return { kind: m[1] as SubjectKind, id: Number(m[2]) };
   }
   return null;
 }
@@ -94,13 +114,14 @@ const num = (...vals: unknown[]) => {
 function normalizeClankerToken(t: Json): FanClubToken | null {
   const address = t.contract_address ?? t.address;
   if (!address || !isAddress(address)) return null;
-  const movieId = movieIdFromToken(t);
-  if (movieId === null) return null;
+  const subject = subjectFromToken(t);
+  if (!subject) return null;
   if (t.chain_id && Number(t.chain_id) !== CHAIN.id) return null;
   const market = t.related?.market ?? t.market ?? {};
   return {
     address: getAddress(address),
-    movieId,
+    kind: subject.kind,
+    subjectId: subject.id,
     name: t.name ?? '',
     symbol: t.symbol ?? '',
     image: t.img_url ?? t.image ?? '',

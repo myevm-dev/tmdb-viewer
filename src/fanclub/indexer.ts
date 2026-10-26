@@ -132,7 +132,7 @@ export function useIndexedClubs(
   params: {
     sort?: IndexedSort;
     kind?: SubjectKind;
-    subject?: { kind: SubjectKind; id: number };
+    subjects?: { kind: SubjectKind; id: number }[];
     limit?: number;
   },
   enabled = true,
@@ -142,8 +142,11 @@ export function useIndexedClubs(
     limit: String(params.limit ?? 100),
   });
   if (params.kind) qs.set('kind', params.kind);
-  if (params.subject)
-    qs.set('subject', `${params.subject.kind}:${params.subject.id}`);
+  if (params.subjects?.length)
+    qs.set(
+      'subject',
+      params.subjects.map((x) => `${x.kind}:${x.id}`).join(','),
+    );
   return useQuery({
     queryKey: ['indexer', 'clubs', qs.toString()],
     queryFn: () =>

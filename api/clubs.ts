@@ -7,7 +7,7 @@ const KINDS: SubjectKind[] = ['movie', 'tv', 'person', 'artist'];
 const SORTS: Sort[] = ['trending', 'new', 'top', 'gainers', 'volume'];
 
 /**
- * GET /api/clubs?sort=trending|new|top|gainers|volume&kind=movie|tv|person|artist&subject=person:123&limit=60
+ * GET /api/clubs?sort=trending|new|top|gainers|volume&kind=movie|tv|person|artist&subject=person:123[,artist:456]&limit=60
  */
 export const GET = readHandler(async (url) => {
   const sortParam = url.searchParams.get('sort') as Sort | null;
@@ -16,18 +16,16 @@ export const GET = readHandler(async (url) => {
   const kind = KINDS.includes(kindParam as SubjectKind)
     ? (kindParam as SubjectKind)
     : undefined;
-  const subjectParam = /^(movie|tv|person|artist):(\d+)$/.exec(
-    url.searchParams.get('subject') ?? '',
-  );
-  const subject = subjectParam
-    ? {
-        kind: subjectParam[1] as SubjectKind,
-        id: Number(subjectParam[2]),
-      }
-    : undefined;
+  // subject=person:123 or several, comma-separated: person:123,artist:456
+  const subjects = (url.searchParams.get('subject') ?? '')
+    .split(',')
+    .map((x) => /^(movie|tv|person|artist):(\d+)$/.exec(x.trim()))
+    .filter((m): m is RegExpExecArray => !!m)
+    .slice(0, 10)
+    .map((m) => ({ kind: m[1] as SubjectKind, id: Number(m[2]) }));
   const limit = Number(url.searchParams.get('limit') ?? 60) || 60;
   const [clubs, meta] = await Promise.all([
-    listClubs({ sort, kind, subject, limit }),
+    listClubs({ sort, kind, subjects, limit }),
     ethUsdNow(),
   ]);
   return { clubs, ...meta };

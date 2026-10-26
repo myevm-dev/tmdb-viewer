@@ -80,20 +80,30 @@ export function useAllFanClubs(sort: ClubSort = 'new') {
   ]);
 }
 
-/** Fan clubs for one movie or person. The earliest launch is the "official" one. */
+/**
+ * Fan clubs for one subject — including its aliases (the same real person in
+ * other catalogs). The earliest launch across all of them is the official club.
+ */
 export function useSubjectFanClubs(
   kind: SubjectKind,
   subjectId: number,
   name?: string,
+  aliases: { kind: SubjectKind; id: number }[] = [],
 ) {
   const { enabled, ready } = useIndexer();
   const local = useLocalFanClubs();
+  const subjects = useMemo(
+    () => [{ kind, id: subjectId }, ...aliases],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [kind, subjectId, aliases.map((a) => `${a.kind}:${a.id}`).join(',')],
+  );
+  const subjectKey = subjects.map((x) => `${x.kind}:${x.id}`).join(',');
   const indexed = useIndexedClubs(
-    { sort: 'new', subject: { kind, id: subjectId }, limit: 20 },
+    { sort: 'new', subjects, limit: 20 },
     enabled,
   );
   const remote = useQuery({
-    queryKey: ['fanclubs', kind, subjectId],
+    queryKey: ['fanclubs', subjectKey],
     queryFn: () => fetchClankerFanClubs({ q: name, limit: 20 }),
     enabled: ready && !enabled && !!name,
     staleTime: 30_000,
@@ -105,10 +115,12 @@ export function useSubjectFanClubs(
   const clubs = useMemo(
     () =>
       mergeFanClubs(source, local)
-        .filter((t) => t.kind === kind && t.subjectId === subjectId)
+        .filter((t) =>
+          subjects.some((x) => x.kind === t.kind && x.id === t.subjectId),
+        )
         .sort(byCreated),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [indexed.data, remote.data, local, kind, subjectId, enabled],
+    [indexed.data, remote.data, local, subjectKey, enabled],
   );
   const loading = !ready || (enabled ? indexed.isLoading : remote.isLoading);
   return {

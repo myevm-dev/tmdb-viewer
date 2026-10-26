@@ -16,12 +16,25 @@ import {
 import { useWallet } from '../wallet/WalletProvider';
 import type { FanClubToken } from './data';
 
-export default function FanClubPanel({ subject }: { subject: FanSubject }) {
-  const { clubs, primary, isLoading } = useSubjectFanClubs(
+export default function FanClubPanel({
+  subject,
+  pending = false,
+}: {
+  subject: FanSubject;
+  /** True while we're still working out who this is across catalogs. */
+  pending?: boolean;
+}) {
+  const {
+    clubs,
+    primary,
+    isLoading: clubsLoading,
+  } = useSubjectFanClubs(
     subject.kind,
     subject.id,
     subject.name,
+    subject.aliases,
   );
+  const isLoading = clubsLoading || pending;
   const [launchOpen, setLaunchOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const active = clubs.find((c) => c.address === selected) ?? primary;

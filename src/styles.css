@@ -2811,3 +2811,46 @@ button.pill {
     display: none;
   }
 }
+
+/* ---------- identity ---------- */
+
+.person__roles {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.pill--gold {
+  border-color: rgba(245, 196, 81, 0.6);
+  color: var(--gold);
+}
+.pill--gold:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+.tracks__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.tracks__head h2 {
+  margin-bottom: 0;
+}
+.all-results {
+  display: grid;
+  gap: 18px;
+}
+.all-results__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.all-results__more {
+  display: flex;
+  gap: 16px;
+}

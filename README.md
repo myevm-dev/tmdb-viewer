@@ -10,6 +10,7 @@ Fancast is a streaming-style browser for movies, TV shows and the people who mak
 - **People** — actors and directors get the same treatment as films: a People section (popular / trending), person pages with bio, socials, "Known for" and "Latest & upcoming" rows, a People tab in search, clickable cast and director credits, and **Follow** to track people in My List.
 - **TV shows** — TMDB TV catalog with Trending / Popular / Top Rated / On The Air / Airing Today, show pages with seasons, cast (episode counts), creators, rating, trailer and recommendations; save shows to My List. People pages include TV credits (talk and reality appearances filtered out).
 - **Music** — Deezer artist charts by genre, artist pages with 30-second previews of top tracks, albums, "Fans also like", follow, and a Music tab in search.
+- **One identity per person** — actors and musicians are linked through Wikidata (see below), so a crossover star shows once in search, their actor page includes their music, their artist page includes their screen work, and following either follows them.
 - **Wallet (ethers.js v6)** — EIP-6963 multi-wallet discovery with a `window.ethereum` fallback, silent reconnect, Base network switch/add, ETH balance, copy/explorer/disconnect menu.
 - **Fan Clubs**
   - Every movie, TV show, person and music artist page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
@@ -20,7 +21,21 @@ Fancast is a streaming-style browser for movies, TV shows and the people who mak
   - Connected wallets see their stake in each club.
   - `/fan-clubs` launchpad: totals, Films / TV / People / Music filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.
 
-## Live market data (indexer)
+## Identity (one person, one club)
+
+Fancast keys every real person to their **Wikidata item** (Q-id). Each catalog plugs in through the Wikidata property that stores its id, so adding a source is one line — not a matcher for every pair of sources.
+
+| Catalog | Wikidata property |
+| --- | --- |
+| TMDB person | `P4985` |
+| Deezer artist | `P2722` |
+| Sports (planned) | the athlete catalog's property, or name + date of birth where none exists |
+
+- **Exact links only:** no fuzzy name matching, so different people who share a name are never merged. If Wikidata has no link, profiles simply stay separate.
+- **One fan club per person:** when linked, the TMDB person is the canonical club subject and other catalog ids are aliases. Clubs launched from any page — or before linking existed — are found everywhere, and the earliest stays the official club. New launches stamp the Wikidata id (`wd:Q…`) and every catalog URL into the token metadata.
+- **Search:** the **All** tab merges people and artists so each person appears once (e.g. "Acting · Music").
+- **Efficient:** lookups are batched into one SPARQL query per screen, cached a day at the CDN by `/api/identity` (with a proper User-Agent), and a week in the browser. Without the API (static hosts) the browser queries Wikidata directly. If Wikidata is unavailable, pages still work, just unlinked.
+
 
 Once trading picks up, Fancast tracks every club itself instead of asking outside sites on each page view.
 

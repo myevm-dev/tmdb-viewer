@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { getAddress, isAddress } from 'ethers';
 import { createStore } from '../lib/storage';
-import { CHAIN, CLANKER_API, FAN_CLUB_INTERFACE } from './config';
+import { CHAIN, CLANKER_API, FAN_CLUB_INTERFACES } from './config';
 
 /** What a fan club is for: a film or a person (actor, director…). */
 export type SubjectKind = 'movie' | 'person';
@@ -86,7 +86,7 @@ export function subjectFromToken(
   const ctx = parseMaybeJson(t.social_context ?? t.socialContext ?? t.context);
   if (ctx) {
     const iface = String(ctx.interface ?? '');
-    if (iface && iface !== FAN_CLUB_INTERFACE) return null;
+    if (iface && !FAN_CLUB_INTERFACES.includes(iface)) return null;
     const fromMsg = /(movie|person)\/(\d+)/.exec(String(ctx.messageId ?? ''));
     if (fromMsg)
       return { kind: fromMsg[1] as SubjectKind, id: Number(fromMsg[2]) };
@@ -134,16 +134,15 @@ function normalizeClankerToken(t: Json): FanClubToken | null {
   };
 }
 
-export async function fetchClankerFanClubs(
-  opts: {
-    q?: string;
-    sortBy?: 'market-cap' | 'tx-h24' | 'price-percent-h24';
-    limit?: number;
-    cursor?: string;
-  } = {},
-): Promise<{ tokens: FanClubToken[]; cursor?: string }> {
+type FetchOpts = {
+  q?: string;
+  sortBy?: 'market-cap' | 'tx-h24' | 'price-percent-h24';
+  limit?: number;
+};
+
+async function fetchByInterface(iface: string, opts: FetchOpts) {
   const params = new URLSearchParams({
-    socialInterface: FAN_CLUB_INTERFACE,
+    socialInterface: iface,
     chainId: String(CHAIN.id),
     limit: String(opts.limit ?? 20),
     includeMarket: 'true',
@@ -151,7 +150,6 @@ export async function fetchClankerFanClubs(
   });
   if (opts.q) params.set('q', opts.q.slice(0, 100));
   if (opts.sortBy) params.set('sortBy', opts.sortBy);
-  if (opts.cursor) params.set('cursor', opts.cursor);
 
   const res = await fetch(`${CLANKER_API}/tokens?${params}`, {
     headers: { accept: 'application/json' },
@@ -163,12 +161,22 @@ export async function fetchClankerFanClubs(
   const raw: Json[] = Array.isArray(body)
     ? body
     : (body.data ?? body.tokens ?? []);
-  return {
-    tokens: raw
-      .map(normalizeClankerToken)
-      .filter((t): t is FanClubToken => !!t),
-    cursor: body.cursor ?? undefined,
-  };
+  return raw.map(normalizeClankerToken).filter((t): t is FanClubToken => !!t);
+}
+
+/** Fan clubs from Clanker's index, across current and legacy interface tags. */
+export async function fetchClankerFanClubs(
+  opts: FetchOpts = {},
+): Promise<{ tokens: FanClubToken[] }> {
+  const results = await Promise.allSettled(
+    FAN_CLUB_INTERFACES.map((iface) => fetchByInterface(iface, opts)),
+  );
+  const ok = results.filter(
+    (r): r is PromiseFulfilledResult<FanClubToken[]> =>
+      r.status === 'fulfilled',
+  );
+  if (!ok.length) throw (results[0] as PromiseRejectedResult).reason;
+  return { tokens: mergeFanClubs(...ok.map((r) => r.value)) };
 }
 
 /** Merge lists, de-duplicating by address (Clanker data wins, local fills gaps). */

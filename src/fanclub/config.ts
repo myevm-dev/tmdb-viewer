@@ -39,8 +39,10 @@ export const CHAIN: ChainConfig = CHAINS[envChain] ?? CHAINS[8453];
 if (import.meta.env.VITE_RPC_URL) CHAIN.rpc = import.meta.env.VITE_RPC_URL;
 
 /** Social-context interface tag stamped on every fan club token we deploy. */
-export const FAN_CLUB_INTERFACE = 'TMDB Fan Club';
-export const FAN_CLUB_PLATFORM = 'tmdb';
+export const FAN_CLUB_INTERFACE = 'Fancast';
+/** Every tag we recognise when discovering clubs (includes the pre-rename one). */
+export const FAN_CLUB_INTERFACES = [FAN_CLUB_INTERFACE, 'TMDB Fan Club'];
+export const FAN_CLUB_PLATFORM = 'fancast';
 
 export const CLANKER_API = (
   import.meta.env.VITE_CLANKER_API || '/clanker-api'

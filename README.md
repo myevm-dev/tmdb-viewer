@@ -1,6 +1,8 @@
-# Reel — Movies & Fan Clubs
+# Fancast
 
-A streaming-style movie browser (TMDB) with an on-chain **Fan Club launchpad**: anyone can launch a fan token for any film through the [Clanker](https://www.clanker.world) v4 factory, with its own Uniswap v4 pool on Base.
+**Every fandom gets a cast.**
+
+Fancast is a streaming-style browser for movies and the people who make them (TMDB), with an on-chain **Fan Club launchpad**: anyone can launch a fan token for any film or star through the [Clanker](https://www.clanker.world) v4 factory, with its own Uniswap v4 pool on Base.
 
 ## Features
 
@@ -11,7 +13,7 @@ A streaming-style movie browser (TMDB) with an on-chain **Fan Club launchpad**: 
   - Every movie **and person** page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
   - Launches build the deploy call with `clanker-sdk/v4` (`getDeployTransaction`), encode it with ethers, gas-estimate (surfaces reverts before the wallet prompt), send through the connected signer, and parse `TokenCreated` from the receipt.
   - Options: name, ticker, description, poster/backdrop image, launch curve (Standard / Tiered / Premiere), swap fee (flat 1% or dynamic 1–5%), optional creator buy, optional creator vault with lockup.
-  - Tokens are tagged with social context `interface: "TMDB Fan Club"` and `messageId: movie/<tmdbId>` or `person/<tmdbId>`, so clubs launched by anyone are discovered through the Clanker API and mapped back to their film or person.
+  - Tokens are tagged with social context `interface: "Fancast"` (clubs tagged with the earlier `"TMDB Fan Club"` are still discovered) and `messageId: movie/<tmdbId>` or `person/<tmdbId>`, so clubs launched by anyone are discovered through the Clanker API and mapped back to their film or person.
   - Live price, market cap, 24h change, volume, liquidity and trades come from DexScreener, with an embedded chart. **When no pool or chart exists yet, designed placeholders are shown** (detail panel and launchpad cards).
   - Connected wallets see their stake in each club.
   - `/fan-clubs` launchpad: totals, Films / People filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.

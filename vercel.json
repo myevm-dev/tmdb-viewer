@@ -1,4 +1,10 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }]
+    }
+  ],
   "rewrites": [
     { "source": "/clanker-api/:path*", "destination": "https://www.clanker.world/api/:path*" },
     { "source": "/((?!assets/|favicon|manifest|robots).*)", "destination": "/index.html" }

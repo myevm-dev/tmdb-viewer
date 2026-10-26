@@ -12,7 +12,7 @@ import {
   PLATFORM_FEE,
 } from './config';
 import { saveLocalFanClub, type FanClubToken } from './data';
-import { tmdbMovieUrl } from '../lib/tmdb';
+import type { FanSubject } from './subject';
 
 export type LiquidityPreset = 'Standard' | 'Project' | 'TwentyETH';
 export type FeePreset = 'StaticBasic' | 'DynamicBasic';
@@ -48,8 +48,7 @@ export const FEE_PRESETS: Record<FeePreset, { label: string; blurb: string }> =
   };
 
 export interface LaunchInput {
-  movieId: number;
-  movieTitle: string;
+  subject: FanSubject;
   name: string;
   symbol: string;
   description: string;
@@ -110,15 +109,14 @@ export async function launchFanClub(
     salt: hexlify(randomBytes(32)) as `0x${string}`,
     metadata: {
       description: input.description.trim(),
-      socialMediaUrls: [
-        { platform: 'website', url: tmdbMovieUrl(input.movieId) },
-      ],
+      socialMediaUrls: [{ platform: 'website', url: input.subject.tmdbUrl }],
     },
     context: {
       interface: FAN_CLUB_INTERFACE,
       platform: FAN_CLUB_PLATFORM,
-      messageId: `movie/${input.movieId}`,
-      id: String(input.movieId),
+      // e.g. "movie/27205" or "person/6193" — how clubs map back to TMDB.
+      messageId: `${input.subject.kind}/${input.subject.id}`,
+      id: `${input.subject.kind}-${input.subject.id}`,
     },
     pool: {
       pairedToken: 'WETH',
@@ -187,7 +185,8 @@ export async function launchFanClub(
 
   const token: FanClubToken = {
     address: getAddress(tokenAddress),
-    movieId: input.movieId,
+    kind: input.subject.kind,
+    subjectId: input.subject.id,
     name: input.name.trim(),
     symbol: input.symbol.trim().toUpperCase(),
     image: input.image,

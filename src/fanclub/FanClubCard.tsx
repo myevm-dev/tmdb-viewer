@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { FanClubToken, TokenMarket } from './data';
+import { subjectPath, type FanClubToken, type TokenMarket } from './data';
 import { ChartPlaceholder } from './TokenChart';
 import { pct, timeAgo, usd } from '../lib/format';
 
@@ -15,7 +15,10 @@ export default function FanClubCard({ token, market, rank }: Props) {
   const up = (change ?? 0) >= 0;
 
   return (
-    <Link to={`/movie/${token.movieId}#fan-club`} className="fc-card">
+    <Link
+      to={`${subjectPath(token.kind, token.subjectId)}#fan-club`}
+      className="fc-card"
+    >
       <div className="fc-card__media">
         {token.image ? (
           <img src={token.image} alt="" loading="lazy" />
@@ -28,7 +31,10 @@ export default function FanClubCard({ token, market, rank }: Props) {
       <div className="fc-card__body">
         <div className="fc-card__title">
           <strong title={token.name}>{token.name}</strong>
-          <span className="mono muted">${token.symbol}</span>
+          <span className="muted small">
+            <span className="mono">${token.symbol}</span> ·{' '}
+            {token.kind === 'person' ? 'Person' : 'Film'}
+          </span>
         </div>
         <div className="fc-card__chart">
           {market ? (

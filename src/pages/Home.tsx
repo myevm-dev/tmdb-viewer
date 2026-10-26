@@ -7,7 +7,10 @@ import { CATEGORIES, getCategory, type Category } from '../lib/tmdb';
 import { useAllFanClubs, useMarkets } from '../fanclub/hooks';
 import FanClubCard from '../fanclub/FanClubCard';
 import { RocketIcon } from '../components/Icons';
-import MyListRow from './MyListRow';
+import MyListRow, { FollowingRow } from './MyListRow';
+import PersonCard from '../components/PersonCard';
+import { knownFor } from '../components/PeopleGrid';
+import { getPeople } from '../lib/tmdb';
 
 function useCategory(c: Category) {
   return useQuery({
@@ -73,6 +76,28 @@ function FanClubsRow() {
   );
 }
 
+function PeopleRow() {
+  const q = useQuery({
+    queryKey: ['people', 'trending', 1],
+    queryFn: () => getPeople('trending', 1),
+    staleTime: 10 * 60_000,
+  });
+  return (
+    <Row
+      title="Trending People"
+      href="/people/trending"
+      variant="card"
+      loading={q.isLoading}
+    >
+      {q.data?.results
+        .filter((p) => p.profile_path)
+        .map((p) => (
+          <PersonCard key={p.id} person={p} subtitle={knownFor(p)} />
+        ))}
+    </Row>
+  );
+}
+
 export default function Home() {
   const trending = useCategory('trending');
   const top = useCategory('top_rated');
@@ -94,6 +119,8 @@ export default function Home() {
           ))}
         </Row>
         <MyListRow />
+        <FollowingRow />
+        <PeopleRow />
         <CategoryRow category="now_playing" />
         <CategoryRow category="popular" />
         <CategoryRow category="upcoming" />

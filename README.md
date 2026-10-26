@@ -5,15 +5,16 @@ A streaming-style movie browser (TMDB) with an on-chain **Fan Club launchpad**: 
 ## Features
 
 - **Streaming UI** — rotating hero with trailers, horizontal shelves (Trending, Top 10, Now Playing, Popular, Coming Soon), hover-expand tiles, detail pages with cast and recommendations, infinite-scroll browse and search, and My List (saved locally; favorites from the old version carry over).
+- **People** — actors and directors get the same treatment as films: a People section (popular / trending), person pages with bio, socials, "Known for" and "Latest & upcoming" rows, a People tab in search, clickable cast and director credits, and **Follow** to track people in My List.
 - **Wallet (ethers.js v6)** — EIP-6963 multi-wallet discovery with a `window.ethereum` fallback, silent reconnect, Base network switch/add, ETH balance, copy/explorer/disconnect menu.
 - **Fan Clubs**
-  - Every movie page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
+  - Every movie **and person** page has a **Fan Club** panel. With no club yet, it offers a one-click **Launch fan club** flow.
   - Launches build the deploy call with `clanker-sdk/v4` (`getDeployTransaction`), encode it with ethers, gas-estimate (surfaces reverts before the wallet prompt), send through the connected signer, and parse `TokenCreated` from the receipt.
   - Options: name, ticker, description, poster/backdrop image, launch curve (Standard / Tiered / Premiere), swap fee (flat 1% or dynamic 1–5%), optional creator buy, optional creator vault with lockup.
-  - Tokens are tagged with social context `interface: "TMDB Fan Club"` and `messageId: movie/<tmdbId>`, so clubs launched by anyone are discovered through the Clanker API and mapped back to their movie.
+  - Tokens are tagged with social context `interface: "TMDB Fan Club"` and `messageId: movie/<tmdbId>` or `person/<tmdbId>`, so clubs launched by anyone are discovered through the Clanker API and mapped back to their film or person.
   - Live price, market cap, 24h change, volume, liquidity and trades come from DexScreener, with an embedded chart. **When no pool or chart exists yet, designed placeholders are shown** (detail panel and launchpad cards).
   - Connected wallets see their stake in each club.
-  - `/fan-clubs` launchpad: totals, Top / New / Gainers sorting, and a movie picker that deep-links into the launch flow.
+  - `/fan-clubs` launchpad: totals, Films / People filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.
 
 ## Getting started
 

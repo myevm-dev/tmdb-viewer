@@ -9,13 +9,14 @@ import {
   getRecommendations,
   pickTrailer,
   posterUrl,
-  profileUrl,
   releaseYear,
 } from '../lib/tmdb';
 import Row from '../components/Row';
 import { ListButton, MovieTile } from '../components/MovieTile';
 import TrailerModal from '../components/TrailerModal';
 import FanClubPanel from '../fanclub/FanClubPanel';
+import PersonCard from '../components/PersonCard';
+import { movieSubject } from '../fanclub/subject';
 import { PlayIcon, StarIcon, UsersIcon } from '../components/Icons';
 
 export default function MovieDetail() {
@@ -134,7 +135,10 @@ export default function MovieDetail() {
             <p className="detail__overview">{m.overview}</p>
             {director && (
               <p className="muted">
-                Directed by <span className="text">{director.name}</span>
+                Directed by{' '}
+                <Link className="text link-u" to={`/person/${director.id}`}>
+                  {director.name}
+                </Link>
               </p>
             )}
           </div>
@@ -142,24 +146,16 @@ export default function MovieDetail() {
       </section>
 
       <div className="shelves shelves--detail">
-        <FanClubPanel movie={m} />
+        <FanClubPanel subject={movieSubject(m)} />
 
         {cast.length > 0 && (
           <Row title="Cast" variant="card">
             {cast.map((c) => (
-              <div key={`${c.id}-${c.character}`} className="person">
-                {profileUrl(c.profile_path) ? (
-                  <img
-                    src={profileUrl(c.profile_path)!}
-                    alt=""
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="person__ph">{c.name.slice(0, 1)}</div>
-                )}
-                <strong>{c.name}</strong>
-                <span className="muted small">{c.character}</span>
-              </div>
+              <PersonCard
+                key={`${c.id}-${c.character}`}
+                person={c}
+                subtitle={c.character}
+              />
             ))}
           </Row>
         )}

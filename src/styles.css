@@ -1274,19 +1274,37 @@ main {
 
 .person {
   flex: 0 0 auto;
-  width: 132px;
+  width: 148px;
   display: grid;
+  justify-items: center;
+  align-content: start;
   gap: 2px;
+  padding: 12px 8px 14px;
+  border-radius: var(--radius-lg);
   font-size: 13.5px;
+  text-align: center;
+  transition: background 0.2s, transform 0.25s var(--ease);
 }
-.person img,
+.person:hover {
+  background: var(--surface);
+  transform: translateY(-4px);
+}
+.person__photo {
+  position: relative;
+  margin-bottom: 10px;
+}
+.person__photo img,
 .person__ph {
-  width: 132px;
-  height: 132px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 8px;
   background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line-2);
+  transition: box-shadow 0.25s;
+}
+.person:hover .person__photo img {
+  box-shadow: 0 0 0 2px var(--gold);
 }
 .person__ph {
   display: grid;
@@ -1295,11 +1313,144 @@ main {
   font-size: 40px;
   color: var(--muted);
 }
-.person strong,
-.person span {
+.person__ph--lg {
+  font-size: 96px;
+  border-radius: 12px;
+}
+.person__club {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.person > strong,
+.person > span {
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.person .follow-btn {
+  margin-top: 8px;
+}
+.people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 18px 8px;
+  padding-bottom: 40px;
+}
+.people-grid .person {
+  width: auto;
+}
+.skeleton--person {
+  height: 230px;
+  border-radius: var(--radius-lg);
+}
+.row .skeleton--card {
+  height: 230px;
+}
+
+.follow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  transition: 0.15s;
+}
+.follow-btn:hover {
+  border-color: #fff;
+}
+.follow-btn.is-on {
+  border-color: rgba(245, 196, 81, 0.6);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.follow-btn--lg {
+  height: 50px;
+  padding: 0 24px;
+  font-size: 16px;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+.follow-btn--lg:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+.follow-btn--lg.is-on {
+  background: rgba(10, 10, 14, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+/* person page */
+.detail--person .detail__poster {
+  object-position: center top;
+}
+.detail__bg--soft {
+  filter: blur(2px) saturate(0.8) brightness(0.7);
+  transform: scale(1.04);
+}
+.bio .detail__overview {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-line;
+}
+.bio.is-open .detail__overview {
+  display: block;
+}
+.bio .link-btn {
+  margin-bottom: 12px;
+}
+.socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.socials .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.link-u {
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.link-u:hover {
+  text-decoration-color: var(--gold);
+}
+.sub-head {
+  font-size: 20px;
+  margin: 8px 0 16px;
+}
+.seg-count {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.lp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.picker__list img.is-round {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  margin: 4px -4px;
 }
 
 /* ---------- fan club panel ---------- */
@@ -2307,4 +2458,15 @@ main {
 }
 .video__fallback:hover {
   color: var(--gold);
+}
+
+@media (max-width: 760px) {
+  .detail--person .hero__meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .detail--person .dot-sep::before {
+    display: none;
+  }
 }

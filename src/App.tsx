@@ -10,6 +10,8 @@ const Search = lazy(() => import('./pages/Search'));
 const MovieDetail = lazy(() => import('./pages/MovieDetail'));
 const MyList = lazy(() => import('./pages/MyList'));
 const FanClubs = lazy(() => import('./pages/FanClubs'));
+const People = lazy(() => import('./pages/People'));
+const PersonDetail = lazy(() => import('./pages/PersonDetail'));
 
 function TopLoader() {
   const fetching = useIsFetching();
@@ -36,6 +38,12 @@ export default function App() {
             <Route path="/browse/:category" element={<Browse />} />
             <Route path="/search" element={<Search />} />
             <Route path="/movie/:movieId" element={<MovieDetail />} />
+            <Route
+              path="/people"
+              element={<Navigate to="/people/popular" replace />}
+            />
+            <Route path="/people/:category" element={<People />} />
+            <Route path="/person/:personId" element={<PersonDetail />} />
             <Route path="/my-list" element={<MyList />} />
             <Route
               path="/favorites"

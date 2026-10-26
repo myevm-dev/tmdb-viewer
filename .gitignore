@@ -26,3 +26,6 @@ yarn-error.log*
 
 # ide-specific
 .idea
+
+.env
+build

@@ -2294,3 +2294,17 @@ main {
 .club .btn-row > .btn:first-child {
   flex: 1 0 100%;
 }
+
+.video__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  background: #000;
+}
+.video__fallback:hover {
+  color: var(--gold);
+}

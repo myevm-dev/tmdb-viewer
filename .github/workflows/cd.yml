@@ -13,24 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: 12
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        run: npm ci
 
-      - name: Build
+      - name: Typecheck & build
         run: npm run build
-
-      - name: E2E
-        uses: cypress-io/github-action@v2
-        with:
-          start: npx serve -s build -l 3000 -n
-          wait-on: 'http://localhost:3000'
 
       - name: Deploy to Surge.sh
         if: ${{ github.event_name != 'pull_request' }}

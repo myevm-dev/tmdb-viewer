@@ -16,6 +16,7 @@ import {
   type DzArtist,
 } from '../lib/deezer';
 import type { SubjectKind } from './data';
+import { identitySubjects, type Identity } from '../lib/identity';
 
 /** Anything a fan club can be launched for — a film, show, person or artist. */
 export interface FanSubject {
@@ -28,6 +29,40 @@ export interface FanSubject {
   altImage: string | null;
   /** Canonical page for the subject (TMDB or Deezer); stamped into token metadata. */
   sourceUrl: string;
+  /** Same real person in other catalogs — their clubs count as this club. */
+  aliases?: { kind: SubjectKind; id: number }[];
+  /** Other catalog pages for the same person, also stamped into metadata. */
+  extraUrls?: string[];
+  /** Wikidata item when the identity is known. */
+  wikidata?: string;
+}
+
+/**
+ * One real person = one fan club. When a person is linked across catalogs,
+ * the TMDB person becomes the canonical subject and the others are aliases,
+ * so launching from their artist page or their actor page targets the same club.
+ */
+export function canonicalize(
+  base: FanSubject,
+  identity: Identity | null | undefined,
+): FanSubject {
+  const subjects = identitySubjects(identity);
+  if (!identity || subjects.length === 0) return base;
+  const all = [...subjects];
+  if (!all.some((x) => x.kind === base.kind && x.id === base.id))
+    all.push({ kind: base.kind as 'person' | 'artist', id: base.id });
+  const [canonical, ...aliases] = all;
+  const urlFor = (x: { kind: SubjectKind; id: number }) =>
+    x.kind === 'artist' ? deezerArtistUrl(x.id) : tmdbPersonUrl(x.id);
+  return {
+    ...base,
+    kind: canonical.kind,
+    id: canonical.id,
+    sourceUrl: urlFor(canonical),
+    aliases,
+    extraUrls: aliases.map(urlFor),
+    wikidata: identity.qid,
+  };
 }
 
 export function movieSubject(m: MovieDetails): FanSubject {

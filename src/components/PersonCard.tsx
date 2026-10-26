@@ -3,6 +3,7 @@ import { profileUrl, type Person } from '../lib/tmdb';
 import { artistImage, type DzArtist } from '../lib/deezer';
 import { useFollowing, type FollowKind } from '../lib/following';
 import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
+import { identitySubjects, useIdentity } from '../lib/identity';
 import { compact } from '../lib/format';
 import { CheckIcon, PlusIcon } from './Icons';
 
@@ -47,7 +48,18 @@ export function ProfileCard({
   image: string | null;
   subtitle?: string;
 }) {
-  const hasClub = useFanClubSubjects().has(kind, id);
+  const clubs = useFanClubSubjects();
+  // One real person across catalogs: share their club badge and follow state.
+  const { identity } = useIdentity({
+    source: kind === 'person' ? 'tmdb' : 'deezer',
+    id,
+  });
+  const linked = identitySubjects(identity);
+  const hasClub =
+    clubs.has(kind, id) || linked.some((x) => clubs.has(x.kind, x.id));
+  const crossover = linked.length > 1;
+  const followKind: FollowKind = identity?.tmdb ? 'person' : kind;
+  const followId = identity?.tmdb ?? id;
   return (
     <Link to={`/${kind}/${id}`} className={`person person--${kind}`}>
       <div className="person__photo">
@@ -62,7 +74,10 @@ export function ProfileCard({
       </div>
       <strong>{name}</strong>
       {subtitle && <span className="muted small">{subtitle}</span>}
-      <FollowButton id={id} kind={kind} />
+      {crossover && !/music/i.test(subtitle ?? '') && (
+        <span className="person__roles">Screen · Music</span>
+      )}
+      <FollowButton id={followId} kind={followKind} />
     </Link>
   );
 }

@@ -12,7 +12,10 @@ import Row from '../components/Row';
 import { MovieTile } from '../components/MovieTile';
 import { FollowButton } from '../components/PersonCard';
 import FanClubPanel from '../fanclub/FanClubPanel';
-import { personSubject } from '../fanclub/subject';
+import { canonicalize, personSubject } from '../fanclub/subject';
+import { useIdentity } from '../lib/identity';
+import { getArtistTop } from '../lib/deezer';
+import TrackList, { usePreview } from '../components/TrackList';
 import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
 import { ExternalIcon, RocketIcon, UsersIcon } from '../components/Icons';
 
@@ -36,6 +39,18 @@ export default function PersonDetail() {
     queryFn: () => getPerson(id),
     enabled: Number.isFinite(id),
   });
+  // Same real person in music? (Wikidata links TMDB person -> Deezer artist.)
+  const { identity, isLoading: identityLoading } = useIdentity(
+    Number.isFinite(id) ? { source: 'tmdb', id } : null,
+  );
+  const music = useQuery({
+    queryKey: ['artist-top', identity?.deezer],
+    queryFn: () => getArtistTop(identity!.deezer!, 10),
+    enabled: !!identity?.deezer,
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+  const preview = usePreview();
 
   useEffect(() => {
     if (!q.data) return;
@@ -80,7 +95,14 @@ export default function PersonDetail() {
   const backdrop = known.find((c) => c.backdrop_path);
   const photo = profileUrl(p.profile_path, 'h632');
   const years = age(p.birthday, p.deathday);
-  const hasClub = clubs.has('person', p.id);
+  const subject = canonicalize(personSubject(p), identity);
+  const hasClub = [subject, ...(subject.aliases ?? [])].some((x) =>
+    clubs.has(x.kind, x.id),
+  );
+  const roles = [
+    p.known_for_department ?? 'Person',
+    identity?.deezer ? 'Music' : null,
+  ].filter(Boolean);
   const ext = p.external_ids ?? {};
   const socials = [
     ext.instagram_id && [
@@ -116,9 +138,7 @@ export default function PersonDetail() {
             </div>
           )}
           <div className="detail__text">
-            <span className="hero__eyebrow">
-              {p.known_for_department ?? 'Person'}
-            </span>
+            <span className="hero__eyebrow">{roles.join(' · ')}</span>
             <h1 className="detail__title">{p.name}</h1>
             <div className="hero__meta">
               {p.birthday && (
@@ -184,7 +204,20 @@ export default function PersonDetail() {
       </section>
 
       <div className="shelves shelves--detail">
-        <FanClubPanel subject={personSubject(p)} />
+        <FanClubPanel subject={subject} pending={identityLoading} />
+
+        {identity?.deezer && (music.data?.length ?? 0) > 0 && (
+          <TrackList
+            title="Music"
+            tracks={music.data!.slice(0, 5)}
+            preview={preview}
+            action={
+              <Link className="pill" to={`/artist/${identity.deezer}`}>
+                Music profile
+              </Link>
+            }
+          />
+        )}
 
         {known.length > 0 && (
           <Row title="Known for">

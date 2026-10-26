@@ -109,14 +109,31 @@ export async function launchFanClub(
     salt: hexlify(randomBytes(32)) as `0x${string}`,
     metadata: {
       description: input.description.trim(),
-      socialMediaUrls: [{ platform: 'website', url: input.subject.sourceUrl }],
+      socialMediaUrls: [
+        { platform: 'website', url: input.subject.sourceUrl },
+        ...(input.subject.extraUrls ?? []).map((url) => ({
+          platform: 'website',
+          url,
+        })),
+        ...(input.subject.wikidata
+          ? [
+              {
+                platform: 'wikidata',
+                url: `https://www.wikidata.org/wiki/${input.subject.wikidata}`,
+              },
+            ]
+          : []),
+      ],
     },
     context: {
       interface: FAN_CLUB_INTERFACE,
       platform: FAN_CLUB_PLATFORM,
       // e.g. "movie/27205" or "person/6193" — how clubs map back to TMDB.
       messageId: `${input.subject.kind}/${input.subject.id}`,
-      id: `${input.subject.kind}-${input.subject.id}`,
+      // The Wikidata id ties every catalog's page for this person to one club.
+      id: input.subject.wikidata
+        ? `wd:${input.subject.wikidata}`
+        : `${input.subject.kind}-${input.subject.id}`,
     },
     pool: {
       pairedToken: 'WETH',

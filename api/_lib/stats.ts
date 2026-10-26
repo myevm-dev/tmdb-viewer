@@ -179,7 +179,8 @@ export async function ethUsdNow() {
 export async function listClubs(opts: {
   sort?: Sort;
   kind?: SubjectKind;
-  subject?: { kind: SubjectKind; id: number };
+  /** Any of these subjects (one real person can span several catalogs). */
+  subjects?: { kind: SubjectKind; id: number }[];
   limit?: number;
 }) {
   const db = await getDb();
@@ -190,11 +191,12 @@ export async function listClubs(opts: {
     params.push(opts.kind);
     where.push(`c.kind = $${params.length}`);
   }
-  if (opts.subject) {
-    params.push(opts.subject.kind, opts.subject.id);
-    where.push(
-      `c.kind = $${params.length - 1} and c.subject_id = $${params.length}`,
-    );
+  if (opts.subjects?.length) {
+    const ors = opts.subjects.map((s) => {
+      params.push(s.kind, s.id);
+      return `(c.kind = $${params.length - 1} and c.subject_id = $${params.length})`;
+    });
+    where.push(`(${ors.join(' or ')})`);
   }
   const { rows } = await db.query<Row>(
     STATS_SQL(where.length ? `where ${where.join(' and ')}` : ''),

@@ -6,9 +6,11 @@ import { ArtistCard } from '../components/PersonCard';
 import { searchMovies, searchPeople, searchTv } from '../lib/tmdb';
 import { searchArtists } from '../lib/deezer';
 import { compact } from '../lib/format';
+import AllResults from './SearchAll';
 
-type Tab = 'movies' | 'tv' | 'people' | 'music';
+type Tab = 'all' | 'movies' | 'tv' | 'people' | 'music';
 const TABS: [Tab, string][] = [
+  ['all', 'All'],
   ['movies', 'Movies'],
   ['tv', 'TV'],
   ['people', 'People'],
@@ -22,7 +24,7 @@ export default function Search() {
   const [params, setParams] = useSearchParams();
   const query = params.get('q')?.trim() ?? '';
   const tabParam = params.get('tab') as Tab | null;
-  const tab: Tab = TABS.some(([t]) => t === tabParam) ? tabParam! : 'movies';
+  const tab: Tab = TABS.some(([t]) => t === tabParam) ? tabParam! : 'all';
   const enabled = !!query;
 
   const movies = useInfiniteQuery({
@@ -59,6 +61,7 @@ export default function Search() {
   });
 
   const counts: Record<Tab, number | undefined> = {
+    all: undefined,
     movies: movies.data?.pages[0]?.total_results,
     tv: tv.data?.pages[0]?.total_results,
     people: people.data?.pages[0]?.total_results,
@@ -67,7 +70,7 @@ export default function Search() {
 
   const setTab = (t: Tab) => {
     const next = new URLSearchParams(params);
-    if (t === 'movies') next.delete('tab');
+    if (t === 'all') next.delete('tab');
     else next.set('tab', t);
     setParams(next, { replace: true });
   };
@@ -99,6 +102,16 @@ export default function Search() {
         <div className="empty">
           Type in the search bar to find a film, show, person or artist.
         </div>
+      ) : tab === 'all' ? (
+        <AllResults
+          movies={movies.data?.pages[0]?.results ?? []}
+          shows={tv.data?.pages[0]?.results ?? []}
+          people={people.data?.pages[0]?.results ?? []}
+          artists={music.data?.pages[0]?.data ?? []}
+          loading={movies.isLoading || people.isLoading}
+          onMore={setTab}
+          query={query}
+        />
       ) : tab === 'movies' ? (
         <MovieGrid
           movies={movies.data?.pages.flatMap((p) => p.results) ?? []}

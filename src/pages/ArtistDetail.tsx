@@ -1,20 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   artistImage,
   deezerArtistUrl,
-  formatDuration,
   getArtist,
   getArtistAlbums,
   getArtistRelated,
   getArtistTop,
-  type DzTrack,
 } from '../lib/deezer';
+import TrackList, { PauseIcon, usePreview } from '../components/TrackList';
+import { useIdentity } from '../lib/identity';
+import { filmography, getPerson } from '../lib/tmdb';
+import { MovieTile } from '../components/MovieTile';
 import Row from '../components/Row';
 import { ArtistCard, FollowButton } from '../components/PersonCard';
 import FanClubPanel from '../fanclub/FanClubPanel';
-import { artistSubject } from '../fanclub/subject';
+import { artistSubject, canonicalize } from '../fanclub/subject';
 import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
 import { compact } from '../lib/format';
 import {
@@ -23,44 +25,6 @@ import {
   RocketIcon,
   UsersIcon,
 } from '../components/Icons';
-
-function PauseIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <rect x="6" y="4.5" width="4" height="15" rx="1" />
-      <rect x="14" y="4.5" width="4" height="15" rx="1" />
-    </svg>
-  );
-}
-
-/** 30-second previews; one track plays at a time. */
-function usePreview() {
-  const audio = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState<number | null>(null);
-  useEffect(() => () => audio.current?.pause(), []);
-  const toggle = (t: DzTrack) => {
-    if (!t.preview) return;
-    if (playing === t.id) {
-      audio.current?.pause();
-      setPlaying(null);
-      return;
-    }
-    audio.current?.pause();
-    const a = new Audio(t.preview);
-    a.volume = 0.8;
-    a.onended = () => setPlaying(null);
-    a.play().catch(() => setPlaying(null));
-    audio.current = a;
-    setPlaying(t.id);
-  };
-  return { playing, toggle };
-}
 
 export default function ArtistDetail() {
   const { artistId } = useParams();
@@ -89,6 +53,16 @@ export default function ArtistDetail() {
     queryKey: ['artist-related', id],
     queryFn: () => getArtistRelated(id),
     enabled: ok,
+  });
+  // Same real person on screen? (Wikidata links the Deezer artist to a TMDB person.)
+  const { identity, isLoading: identityLoading } = useIdentity(
+    ok ? { source: 'deezer', id } : null,
+  );
+  const person = useQuery({
+    queryKey: ['person', identity?.tmdb],
+    queryFn: () => getPerson(identity!.tmdb!),
+    enabled: !!identity?.tmdb,
+    staleTime: 10 * 60_000,
   });
 
   useEffect(() => {
@@ -130,7 +104,14 @@ export default function ArtistDetail() {
   const albumList = (albums.data ?? [])
     .filter((al) => al.record_type !== 'single')
     .slice(0, 20);
-  const hasClub = clubs.has('artist', a.id);
+  const subject = canonicalize(artistSubject(a, albumList[0]), identity);
+  const hasClub = [subject, ...(subject.aliases ?? [])].some((x) =>
+    clubs.has(x.kind, x.id),
+  );
+  const screen = person.data ? filmography(person.data, 20) : [];
+  const roles = ['Music artist', person.data?.known_for_department].filter(
+    Boolean,
+  );
 
   return (
     <div className="detail detail--artist">
@@ -152,7 +133,7 @@ export default function ArtistDetail() {
             </div>
           )}
           <div className="detail__text">
-            <span className="hero__eyebrow">Music artist</span>
+            <span className="hero__eyebrow">{roles.join(' · ')}</span>
             <h1 className="detail__title">{a.name}</h1>
             <div className="hero__meta">
               {!!a.nb_fan && <span>{compact(a.nb_fan)} fans</span>}
@@ -173,7 +154,12 @@ export default function ArtistDetail() {
                 )}{' '}
                 {preview.playing === tracks[0]?.id ? 'Pause' : 'Play top song'}
               </button>
-              <FollowButton id={a.id} kind="artist" size="lg" />
+              {/* Following a linked artist follows the person, so both pages agree. */}
+              <FollowButton
+                id={identity?.tmdb ?? a.id}
+                kind={identity?.tmdb ? 'person' : 'artist'}
+                size="lg"
+              />
               <a className="btn btn--gold-ghost btn--lg" href="#fan-club">
                 {hasClub ? (
                   <>
@@ -195,61 +181,31 @@ export default function ArtistDetail() {
               >
                 Deezer <ExternalIcon size={12} />
               </a>
+              {identity?.tmdb && (
+                <Link
+                  className="pill pill--gold"
+                  to={`/person/${identity.tmdb}`}
+                >
+                  Full profile · film & TV
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </section>
 
       <div className="shelves shelves--detail">
-        {tracks.length > 0 && (
-          <section className="tracks">
-            <h2>Popular</h2>
-            <ol>
-              {tracks.map((t, i) => (
-                <li
-                  key={t.id}
-                  className={preview.playing === t.id ? 'is-playing' : ''}
-                >
-                  <button
-                    className="track__play"
-                    onClick={() => preview.toggle(t)}
-                    disabled={!t.preview}
-                    aria-label={
-                      preview.playing === t.id
-                        ? `Pause ${t.title}`
-                        : `Play ${t.title}`
-                    }
-                  >
-                    <span className="track__num">{i + 1}</span>
-                    {preview.playing === t.id ? (
-                      <PauseIcon size={14} />
-                    ) : (
-                      <PlayIcon size={14} />
-                    )}
-                  </button>
-                  {t.album.cover_medium && (
-                    <img src={t.album.cover_medium} alt="" loading="lazy" />
-                  )}
-                  <div className="track__title">
-                    <strong>{t.title_short ?? t.title}</strong>
-                    <span className="muted small">
-                      {t.explicit_lyrics && (
-                        <span className="badge badge--xs">E</span>
-                      )}{' '}
-                      {t.album.title}
-                    </span>
-                  </div>
-                  <span className="muted small track__dur">
-                    {formatDuration(t.duration)}
-                  </span>
-                </li>
-              ))}
-            </ol>
-            <p className="fine-print">30-second previews courtesy of Deezer.</p>
-          </section>
-        )}
+        <TrackList tracks={tracks} preview={preview} />
 
-        <FanClubPanel subject={artistSubject(a, albumList[0])} />
+        <FanClubPanel subject={subject} pending={identityLoading} />
+
+        {screen.length > 0 && (
+          <Row title="On screen" href={`/person/${identity!.tmdb}`}>
+            {screen.map((m) => (
+              <MovieTile key={`${m.media_type ?? 'movie'}-${m.id}`} movie={m} />
+            ))}
+          </Row>
+        )}
 
         {albumList.length > 0 && (
           <Row title="Albums" variant="card">

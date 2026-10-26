@@ -1,47 +1,66 @@
 import { useQueries } from '@tanstack/react-query';
 import Row from '../components/Row';
 import { MovieTile } from '../components/MovieTile';
-import PersonCard from '../components/PersonCard';
-import { getMovie, getPerson } from '../lib/tmdb';
+import PersonCard, { ArtistCard } from '../components/PersonCard';
+import {
+  getMovie,
+  getPerson,
+  getTv,
+  type Movie,
+  type PersonDetails,
+} from '../lib/tmdb';
+import { getArtist, type DzArtist } from '../lib/deezer';
 import { useMyList } from '../lib/myList';
 import { useFollowing } from '../lib/following';
 
+/** Saved films and shows, newest first. */
 export function useMyListMovies(limit?: number) {
-  const { list } = useMyList();
-  const ids = limit ? list.slice(0, limit) : list;
+  const { entries, count } = useMyList();
+  const list = limit ? entries.slice(0, limit) : entries;
   const results = useQueries({
-    queries: ids.map((id) => ({
-      queryKey: ['movie', id],
-      queryFn: () => getMovie(id),
+    queries: list.map(({ kind, id }) => ({
+      queryKey: [kind, id],
+      queryFn: (): Promise<Movie> => (kind === 'tv' ? getTv(id) : getMovie(id)),
       staleTime: 10 * 60_000,
     })),
   });
   return {
-    movies: results
-      .map((r) => r.data)
-      .filter((m): m is NonNullable<typeof m> => !!m),
+    movies: results.map((r) => r.data).filter((m): m is Movie => !!m),
     loading: results.some((r) => r.isLoading),
-    count: list.length,
+    count,
   };
 }
 
-export function useFollowedPeople(limit?: number) {
-  const { list } = useFollowing();
-  const ids = limit ? list.slice(0, limit) : list;
+export type Followed =
+  { kind: 'person'; data: PersonDetails } | { kind: 'artist'; data: DzArtist };
+
+/** Followed people and artists, newest first. */
+export function useFollowed(limit?: number) {
+  const { entries, count } = useFollowing();
+  const list = limit ? entries.slice(0, limit) : entries;
   const results = useQueries({
-    queries: ids.map((id) => ({
-      queryKey: ['person', id],
-      queryFn: () => getPerson(id),
+    queries: list.map(({ kind, id }) => ({
+      queryKey: [kind, id],
+      queryFn: async (): Promise<Followed> =>
+        kind === 'artist'
+          ? { kind, data: await getArtist(id) }
+          : { kind: 'person', data: await getPerson(id) },
       staleTime: 10 * 60_000,
     })),
   });
   return {
-    people: results
-      .map((r) => r.data)
-      .filter((p): p is NonNullable<typeof p> => !!p),
+    items: results.map((r) => r.data).filter((x): x is Followed => !!x),
     loading: results.some((r) => r.isLoading),
-    count: list.length,
+    count,
   };
+}
+
+export function FollowedCard({ item }: { item: Followed }) {
+  return item.kind === 'artist' ? (
+    <ArtistCard artist={item.data} />
+  ) : (
+    <PersonCard person={item.data} subtitle={item.data.known_for_department} />
+  );
 }
 
 export default function MyListRow() {
@@ -50,25 +69,24 @@ export default function MyListRow() {
   return (
     <Row title="My List" href="/my-list" loading={loading && !movies.length}>
       {movies.map((m) => (
-        <MovieTile key={m.id} movie={m} />
+        <MovieTile key={`${m.media_type ?? 'movie'}-${m.id}`} movie={m} />
       ))}
     </Row>
   );
 }
 
-/** Followed people + what they've been in lately. */
 export function FollowingRow() {
-  const { people, loading, count } = useFollowedPeople(20);
+  const { items, loading, count } = useFollowed(20);
   if (!count) return null;
   return (
     <Row
-      title="People you follow"
+      title="People & artists you follow"
       href="/my-list"
       variant="card"
-      loading={loading && !people.length}
+      loading={loading && !items.length}
     >
-      {people.map((p) => (
-        <PersonCard key={p.id} person={p} subtitle={p.known_for_department} />
+      {items.map((it) => (
+        <FollowedCard key={`${it.kind}-${it.data.id}`} item={it} />
       ))}
     </Row>
   );

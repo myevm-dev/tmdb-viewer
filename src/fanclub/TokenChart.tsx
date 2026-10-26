@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { TokenMarket } from './data';
 import { links } from './config';
 import { ChartIcon } from '../components/Icons';
+import { useIndexer } from './indexer';
+
+const CandleChart = lazy(() => import('./CandleChart'));
 
 interface Props {
+  /** Token address — enables Fancast's own candles when the indexer is live. */
+  address?: string;
   market?: TokenMarket | null;
   loading?: boolean;
   height?: number;
@@ -12,8 +17,12 @@ interface Props {
   emptyText?: string;
 }
 
-/** Live DexScreener chart when a pool is indexed, otherwise a designed placeholder. */
+/**
+ * Price chart: Fancast's own candles from the indexer when available, else the
+ * DexScreener embed, else a designed placeholder.
+ */
 export default function TokenChart({
+  address,
   market,
   loading,
   height = 360,
@@ -21,8 +30,25 @@ export default function TokenChart({
   emptyText = 'The chart appears once the Uniswap v4 pool sees its first trades and gets indexed.',
 }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const { enabled: indexed, ready } = useIndexer();
 
-  if (market?.pairAddress) {
+  if (address && indexed) {
+    return (
+      <div className="chart" style={{ height }}>
+        <Suspense
+          fallback={<ChartPlaceholder loading title="Loading chart…" />}
+        >
+          <CandleChart
+            address={address}
+            emptyTitle={emptyTitle}
+            emptyText={emptyText}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
+  if (ready && market?.source === 'dexscreener' && market.pairAddress) {
     return (
       <div className="chart" style={{ height }}>
         {!loaded && <ChartPlaceholder loading title="Loading chart…" />}

@@ -1,10 +1,18 @@
 import { useMemo } from 'react';
 import { getAddress, isAddress } from 'ethers';
 import { createStore } from '../lib/storage';
-import { CHAIN, CLANKER_API, FAN_CLUB_INTERFACE } from './config';
+import { CHAIN, CLANKER_API, FAN_CLUB_INTERFACES } from './config';
 
-/** What a fan club is for: a film or a person (actor, director…). */
-export type SubjectKind = 'movie' | 'person';
+/** What a fan club is for: a film, a TV show, a person (actor, director…) or a music artist. */
+export type SubjectKind = 'movie' | 'tv' | 'person' | 'artist';
+export const SUBJECT_KINDS: SubjectKind[] = ['movie', 'tv', 'person', 'artist'];
+
+export const KIND_LABEL: Record<SubjectKind, string> = {
+  movie: 'Film',
+  tv: 'TV',
+  person: 'Person',
+  artist: 'Music',
+};
 
 export interface FanClubToken {
   address: string;
@@ -35,6 +43,13 @@ export interface TokenMarket {
   txns24h: number | null;
   url: string;
   dexId: string;
+  /** Extra fields available when data comes from the Fancast indexer. */
+  volume1h?: number | null;
+  buys24h?: number | null;
+  sells24h?: number | null;
+  traders24h?: number | null;
+  lastTradeAt?: string | null;
+  source?: 'indexer' | 'dexscreener';
 }
 
 /* ------------------------------------------------------------------ */
@@ -86,8 +101,10 @@ export function subjectFromToken(
   const ctx = parseMaybeJson(t.social_context ?? t.socialContext ?? t.context);
   if (ctx) {
     const iface = String(ctx.interface ?? '');
-    if (iface && iface !== FAN_CLUB_INTERFACE) return null;
-    const fromMsg = /(movie|person)\/(\d+)/.exec(String(ctx.messageId ?? ''));
+    if (iface && !FAN_CLUB_INTERFACES.includes(iface)) return null;
+    const fromMsg = /(movie|tv|person|artist)\/(\d+)/.exec(
+      String(ctx.messageId ?? ''),
+    );
     if (fromMsg)
       return { kind: fromMsg[1] as SubjectKind, id: Number(fromMsg[2]) };
     // Early launches stored the bare movie id.
@@ -97,8 +114,10 @@ export function subjectFromToken(
   const meta = parseMaybeJson(t.metadata);
   const urls: { url?: string }[] = meta?.socialMediaUrls ?? [];
   for (const u of urls) {
-    const m = /themoviedb\.org\/(movie|person)\/(\d+)/.exec(u.url ?? '');
+    const m = /themoviedb\.org\/(movie|tv|person)\/(\d+)/.exec(u.url ?? '');
     if (m) return { kind: m[1] as SubjectKind, id: Number(m[2]) };
+    const d = /deezer\.com\/(?:[a-z]{2}\/)?artist\/(\d+)/.exec(u.url ?? '');
+    if (d) return { kind: 'artist', id: Number(d[1]) };
   }
   return null;
 }
@@ -134,16 +153,15 @@ function normalizeClankerToken(t: Json): FanClubToken | null {
   };
 }
 
-export async function fetchClankerFanClubs(
-  opts: {
-    q?: string;
-    sortBy?: 'market-cap' | 'tx-h24' | 'price-percent-h24';
-    limit?: number;
-    cursor?: string;
-  } = {},
-): Promise<{ tokens: FanClubToken[]; cursor?: string }> {
+type FetchOpts = {
+  q?: string;
+  sortBy?: 'market-cap' | 'tx-h24' | 'price-percent-h24';
+  limit?: number;
+};
+
+async function fetchByInterface(iface: string, opts: FetchOpts) {
   const params = new URLSearchParams({
-    socialInterface: FAN_CLUB_INTERFACE,
+    socialInterface: iface,
     chainId: String(CHAIN.id),
     limit: String(opts.limit ?? 20),
     includeMarket: 'true',
@@ -151,7 +169,6 @@ export async function fetchClankerFanClubs(
   });
   if (opts.q) params.set('q', opts.q.slice(0, 100));
   if (opts.sortBy) params.set('sortBy', opts.sortBy);
-  if (opts.cursor) params.set('cursor', opts.cursor);
 
   const res = await fetch(`${CLANKER_API}/tokens?${params}`, {
     headers: { accept: 'application/json' },
@@ -163,12 +180,22 @@ export async function fetchClankerFanClubs(
   const raw: Json[] = Array.isArray(body)
     ? body
     : (body.data ?? body.tokens ?? []);
-  return {
-    tokens: raw
-      .map(normalizeClankerToken)
-      .filter((t): t is FanClubToken => !!t),
-    cursor: body.cursor ?? undefined,
-  };
+  return raw.map(normalizeClankerToken).filter((t): t is FanClubToken => !!t);
+}
+
+/** Fan clubs from Clanker's index, across current and legacy interface tags. */
+export async function fetchClankerFanClubs(
+  opts: FetchOpts = {},
+): Promise<{ tokens: FanClubToken[] }> {
+  const results = await Promise.allSettled(
+    FAN_CLUB_INTERFACES.map((iface) => fetchByInterface(iface, opts)),
+  );
+  const ok = results.filter(
+    (r): r is PromiseFulfilledResult<FanClubToken[]> =>
+      r.status === 'fulfilled',
+  );
+  if (!ok.length) throw (results[0] as PromiseRejectedResult).reason;
+  return { tokens: mergeFanClubs(...ok.map((r) => r.value)) };
 }
 
 /** Merge lists, de-duplicating by address (Clanker data wins, local fills gaps). */
@@ -242,6 +269,7 @@ export async function fetchMarkets(
           : null,
         url: p.url,
         dexId: p.dexId,
+        source: 'dexscreener',
       };
     }
   }

@@ -1,6 +1,6 @@
 {
-  "short_name": "Reel",
-  "name": "Reel — Movies & Fan Clubs",
+  "short_name": "Fancast",
+  "name": "Fancast — Fan clubs for every film and star",
   "icons": [{ "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" }],
   "start_url": ".",
   "display": "standalone",

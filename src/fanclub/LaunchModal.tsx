@@ -11,6 +11,7 @@ import {
 } from './deploy';
 import { CHAIN, PLATFORM_FEE, links } from './config';
 import type { FanSubject } from './subject';
+import { pokeIndexer } from './indexer';
 import { suggestSymbol, shortAddress } from '../lib/format';
 import { CheckIcon, ExternalIcon, RocketIcon } from '../components/Icons';
 import type { FanClubToken } from './data';
@@ -95,6 +96,7 @@ export default function LaunchModal({
         setStatus,
       );
       wallet.refreshBalance();
+      pokeIndexer();
       onLaunched?.(token);
     } catch (e) {
       setStatus(null);

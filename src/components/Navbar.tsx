@@ -48,23 +48,26 @@ export default function Navbar() {
   return (
     <header className={`nav ${scrolled ? 'nav--solid' : ''}`}>
       <div className="nav__inner">
-        <Link to="/" className="logo" aria-label="Reel home">
-          <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden>
-            <circle
-              cx="32"
-              cy="32"
-              r="17"
+        <Link to="/" className="logo" aria-label="Fancast home">
+          <svg viewBox="0 0 64 64" width="28" height="28" aria-hidden>
+            <g
               fill="none"
               stroke="currentColor"
-              strokeWidth="5"
+              strokeLinecap="round"
+              strokeWidth="4.5"
+            >
+              <path d="M31.8 18.1A22 22 0 0 1 46.8 35.9" />
+              <path d="M34.6 9.5A31 31 0 0 1 55.7 34.7" />
+            </g>
+            <path
+              fill="currentColor"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              d="M25.0 24.0 L28.9 33.7 L39.3 34.4 L31.3 41.0 L33.8 51.1 L25.0 45.6 L16.2 51.1 L18.7 41.0 L10.7 34.4 L21.1 33.7Z"
             />
-            <circle cx="32" cy="32" r="4.5" fill="currentColor" />
-            <circle cx="32" cy="21" r="3" fill="currentColor" />
-            <circle cx="32" cy="43" r="3" fill="currentColor" />
-            <circle cx="21" cy="32" r="3" fill="currentColor" />
-            <circle cx="43" cy="32" r="3" fill="currentColor" />
           </svg>
-          <span>REEL</span>
+          <span>FANCAST</span>
         </Link>
 
         <nav className="nav__links">
@@ -72,7 +75,9 @@ export default function Navbar() {
             Home
           </NavLink>
           <NavLink to="/browse/popular">Movies</NavLink>
+          <NavLink to="/shows">TV</NavLink>
           <NavLink to="/people">People</NavLink>
+          <NavLink to="/music">Music</NavLink>
           <NavLink to="/fan-clubs" className="nav__fan">
             Fan Clubs
           </NavLink>
@@ -94,7 +99,7 @@ export default function Navbar() {
             <input
               ref={inputRef}
               value={query}
-              placeholder="Titles, people, years"
+              placeholder="Movies, shows, people, artists"
               onChange={(e) => update(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
@@ -123,7 +128,9 @@ export default function Navbar() {
           Home
         </NavLink>
         <NavLink to="/browse/popular">Movies</NavLink>
+        <NavLink to="/shows">TV</NavLink>
         <NavLink to="/people">People</NavLink>
+        <NavLink to="/music">Music</NavLink>
         <NavLink to="/fan-clubs">Fan Clubs</NavLink>
         <NavLink to="/my-list">My List</NavLink>
       </nav>

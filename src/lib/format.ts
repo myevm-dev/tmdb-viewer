@@ -14,10 +14,8 @@ export function usd(
       maximumFractionDigits: 2,
     }).format(n);
   }
-  if (Math.abs(n) > 0 && Math.abs(n) < 0.01) {
-    // Tiny token prices: show significant digits instead of $0.00
-    return `$${n.toPrecision(3)}`;
-  }
+  if (Math.abs(n) > 0 && Math.abs(n) < 0.01)
+    return `${n < 0 ? '-' : ''}$${tinyNumber(Math.abs(n))}`;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -75,4 +73,23 @@ export function suggestSymbol(title: string) {
     return words[words.length - 1].slice(0, 8);
   }
   return joined.slice(0, 8);
+}
+
+const SUB = '₀₁₂₃₄₅₆₇₈₉';
+/**
+ * Token-style tiny numbers: 0.000000898 -> "0.0₆898" (zeros after the point
+ * shown as a subscript count), keeping 3 significant digits.
+ */
+export function tinyNumber(n: number) {
+  if (n === 0) return '0';
+  const zeros = Math.max(0, Math.ceil(-Math.log10(n)) - 1);
+  const digits = Math.round(n * 10 ** (zeros + 3))
+    .toString()
+    .replace(/0+$/, '');
+  if (zeros < 4) return n.toFixed(zeros + 3).replace(/0+$/, '');
+  const sub = String(zeros)
+    .split('')
+    .map((d) => SUB[Number(d)])
+    .join('');
+  return `0.0${sub}${digits || '0'}`;
 }

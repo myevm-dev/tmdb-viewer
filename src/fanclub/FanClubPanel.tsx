@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { FanSubject } from './subject';
 import { useMarkets, useSubjectFanClubs, useTokenBalance } from './hooks';
 import TokenChart from './TokenChart';
+import { useClubTrades, useIndexer } from './indexer';
 import LaunchModal from './LaunchModal';
 import { CHAIN, links } from './config';
 import { compact, pct, shortAddress, timeAgo, usd } from '../lib/format';
@@ -154,8 +155,19 @@ function ActiveClub({ token }: { token: FanClubToken }) {
             tone={change === null ? undefined : change >= 0 ? 'up' : 'down'}
           />
           <Stat label="Volume 24h" value={usd(market?.volume24h)} />
-          <Stat label="Liquidity" value={usd(market?.liquidityUsd)} />
-          <Stat label="Trades 24h" value={compact(market?.txns24h)} />
+          {market?.source === 'indexer' ? (
+            <Stat label="Traders 24h" value={compact(market.traders24h)} />
+          ) : (
+            <Stat label="Liquidity" value={usd(market?.liquidityUsd)} />
+          )}
+          <Stat
+            label="Trades 24h"
+            value={
+              market?.source === 'indexer' && market.txns24h
+                ? `${compact(market.buys24h)}↑ ${compact(market.sells24h)}↓`
+                : compact(market?.txns24h)
+            }
+          />
         </div>
 
         {address && (
@@ -214,8 +226,86 @@ function ActiveClub({ token }: { token: FanClubToken }) {
         </div>
       </div>
       <div className="card card--flush">
-        <TokenChart market={market} loading={markets.isLoading} />
+        <TokenChart
+          address={token.address}
+          market={market}
+          loading={markets.isLoading}
+        />
       </div>
+      <RecentTrades address={token.address} symbol={token.symbol} />
+    </div>
+  );
+}
+
+/** Latest buys/sells for this club (indexer only). */
+function RecentTrades({
+  address,
+  symbol,
+}: {
+  address: string;
+  symbol: string;
+}) {
+  const { enabled } = useIndexer();
+  const q = useClubTrades(address, enabled);
+  if (!enabled) return null;
+  const trades = q.data?.trades ?? [];
+  return (
+    <div className="card trades">
+      <div className="trades__head">
+        <h3>
+          <span className="live-dot" /> Recent trades
+        </h3>
+        <span className="muted small">Updates every 10s</span>
+      </div>
+      {trades.length === 0 ? (
+        <p className="muted small trades__empty">
+          {q.isLoading
+            ? 'Loading…'
+            : `No trades yet. The first buy of $${symbol} will appear here.`}
+        </p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Type</th>
+              <th className="num">USD</th>
+              <th className="num">ETH</th>
+              <th className="num">${symbol}</th>
+              <th className="num">Price</th>
+              <th>Trader</th>
+            </tr>
+          </thead>
+          <tbody>
+            {trades.map((t) => (
+              <tr key={`${t.txHash}-${t.ts}-${t.amount}`}>
+                <td>
+                  <a href={links.tx(t.txHash)} target="_blank" rel="noreferrer">
+                    {timeAgo(t.ts)}
+                  </a>
+                </td>
+                <td className={t.side === 'buy' ? 'is-up' : 'is-down'}>
+                  {t.side === 'buy' ? 'Buy' : 'Sell'}
+                </td>
+                <td className="num">{usd(t.usd)}</td>
+                <td className="num">{t.eth.toFixed(4)}</td>
+                <td className="num">{compact(t.amount)}</td>
+                <td className="num">{usd(t.priceUsd, { compact: false })}</td>
+                <td>
+                  <a
+                    className="mono"
+                    href={links.address(t.trader)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {shortAddress(t.trader)}
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

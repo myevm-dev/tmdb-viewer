@@ -4,7 +4,7 @@ import Hero from '../components/Hero';
 import Row from '../components/Row';
 import { MovieTile, RankTile } from '../components/MovieTile';
 import { CATEGORIES, getCategory, type Category } from '../lib/tmdb';
-import { useAllFanClubs, useMarkets } from '../fanclub/hooks';
+import { rankClubs, useAllFanClubs, useMarkets } from '../fanclub/hooks';
 import FanClubCard from '../fanclub/FanClubCard';
 import { RocketIcon } from '../components/Icons';
 import MyListRow, { FollowingRow } from './MyListRow';
@@ -36,20 +36,17 @@ function CategoryRow({ category }: { category: Category }) {
 }
 
 function FanClubsRow() {
-  const { tokens, isLoading } = useAllFanClubs('market-cap');
+  const { tokens, isLoading, ranked } = useAllFanClubs('trending');
   const markets = useMarkets(tokens.map((t) => t.address));
-  const sorted = [...tokens].sort(
-    (a, b) =>
-      (markets.data?.[b.address.toLowerCase()]?.marketCap ?? b.marketCap ?? 0) -
-      (markets.data?.[a.address.toLowerCase()]?.marketCap ?? a.marketCap ?? 0),
-  );
+  const market = (a: string) => markets.data?.[a.toLowerCase()];
+  const sorted = ranked ? tokens : rankClubs(tokens, market, 'trending');
 
   return (
     <Row
       variant="card"
       title={
         <>
-          <span className="chip chip--gold">LIVE</span> Fan Clubs
+          <span className="chip chip--gold">LIVE</span> Trending Fan Clubs
         </>
       }
       href="/fan-clubs"
@@ -69,7 +66,7 @@ function FanClubsRow() {
           {tokens.length ? 'Launch another' : 'Start the first fan club'}
         </strong>
         <span className="muted">
-          Pick any film and deploy its fan token on Uniswap v4.
+          Pick any film or star and deploy its fan token on Uniswap v4.
         </span>
       </Link>
     </Row>

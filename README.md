@@ -18,6 +18,39 @@ Fancast is a streaming-style browser for movies and the people who make them (TM
   - Connected wallets see their stake in each club.
   - `/fan-clubs` launchpad: totals, Films / People filter, Top / New / Gainers sorting, and a movie-or-person picker that deep-links into the launch flow.
 
+## Live market data (indexer)
+
+Once trading picks up, Fancast tracks every club itself instead of asking outside sites on each page view.
+
+- **What it indexes:** Clanker v4 `TokenCreated` events tagged `Fancast` (new clubs) and Uniswap v4 `Swap` events on those pools (every buy and sell), straight from Base via `eth_getLogs`.
+- **What it computes:** price, market cap, 1h/24h change, 1h/24h volume, buys vs sells, unique traders, a **trending score**, and OHLCV candles.
+- **Trending score:** recent money and breadth of buyers — `3·ln(1+vol1h) + ln(1+vol24h) + 2·√traders24h + 1.5·ln(1+buys1h)` — multiplied by a freshness decay (`e^(−hours since last trade / 12)`), plus a short boost for clubs launched in the last 2 hours.
+- **API (Vercel Functions):** `/api/clubs?sort=trending|new|top|gainers|volume&kind=&subject=`, `/api/club?address=`, `/api/trades`, `/api/candles?address=&tf=5m|15m|1h|4h|1d`, `/api/sync`.
+- **Efficient by design:** responses are cached at the CDN for 5–15 s, so a traffic spike costs one database query. Any read older than 15 s triggers a background sync, so no cron is required (Vercel Hobby only allows daily crons). A sync takes a short lease so concurrent requests never double-index.
+- **UI:** Trending is the default sort on Home and the launchpad, clubs get Fancast's own candlestick chart (with placeholders when there are no trades), a recent-trades table, and the launchpad shows a live activity feed. Without the indexer, everything falls back to the Clanker API and DexScreener.
+
+### Turn it on (Vercel)
+
+1. **Storage → Create → Neon Postgres** on the Vercel project. This sets `DATABASE_URL`.
+2. Add `RPC_URL` — a Base RPC with `eth_getLogs` (Alchemy, QuickNode, etc.).
+3. Add `INDEXER_START_BLOCK` — the Base block of your first launch (or leave unset to backfill ~7 days).
+4. Redeploy. Tables are created automatically on first request.
+5. Optional: keep data hot with no visitors by pinging `/api/sync` every minute (Vercel Cron on Pro, or any uptime monitor). Set `CRON_SECRET` to protect it.
+
+### Try it locally
+
+```bash
+npm run mock-chain                      # fake Base with launches + swaps on :8545
+cat > .env.local <<'ENV'
+DATABASE_URL=pglite:./.data
+RPC_URL=http://localhost:8545
+ETH_USD_FEED=0x00000000000000000000000000000000000feed0
+INDEXER_START_BLOCK=39990000
+ENV
+npm run dev                             # /api routes are served by Vite in dev
+curl -X POST localhost:8545/admin/tick  # simulate more trades
+```
+
 ## Getting started
 
 ```bash
@@ -48,7 +81,7 @@ The Clanker API doesn't send CORS headers, so the app calls it through `/clanker
 
 ## Stack
 
-Vite · React 19 · TypeScript · React Router 7 · TanStack Query 5 · ethers 6 · clanker-sdk 4 (code-split, loaded only when launching).
+Vite · React 19 · TypeScript · React Router 7 · TanStack Query 5 · ethers 6 · clanker-sdk 4 (code-split, loaded only when launching) · lightweight-charts · Vercel Functions + Postgres (indexer).
 
 ---
 

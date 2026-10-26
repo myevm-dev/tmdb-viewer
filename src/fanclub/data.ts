@@ -35,6 +35,13 @@ export interface TokenMarket {
   txns24h: number | null;
   url: string;
   dexId: string;
+  /** Extra fields available when data comes from the Fancast indexer. */
+  volume1h?: number | null;
+  buys24h?: number | null;
+  sells24h?: number | null;
+  traders24h?: number | null;
+  lastTradeAt?: string | null;
+  source?: 'indexer' | 'dexscreener';
 }
 
 /* ------------------------------------------------------------------ */
@@ -250,6 +257,7 @@ export async function fetchMarkets(
           : null,
         url: p.url,
         dexId: p.dexId,
+        source: 'dexscreener',
       };
     }
   }

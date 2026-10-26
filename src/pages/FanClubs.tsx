@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useAllFanClubs, useMarkets } from '../fanclub/hooks';
+import {
+  rankClubs,
+  useAllFanClubs,
+  useMarkets,
+  type ClubSort,
+} from '../fanclub/hooks';
+import { useIndexer } from '../fanclub/indexer';
+import ActivityFeed from '../fanclub/ActivityFeed';
 import FanClubCard from '../fanclub/FanClubCard';
 import { CHAIN } from '../fanclub/config';
 import {
@@ -16,39 +23,28 @@ import { RocketIcon, SearchIcon } from '../components/Icons';
 import { useFanClubSubjects } from '../fanclub/useFanClubSubjects';
 import { subjectPath, type SubjectKind } from '../fanclub/data';
 
-type Sort = 'market-cap' | 'new' | 'gainers';
+const SORTS: [ClubSort, string][] = [
+  ['trending', 'Trending'],
+  ['new', 'New'],
+  ['top', 'Top'],
+  ['gainers', 'Gainers'],
+  ['volume', 'Volume'],
+];
 
 export default function FanClubs() {
-  const [sort, setSort] = useState<Sort>('market-cap');
-  const { tokens, isLoading, apiError } = useAllFanClubs(
-    sort === 'new' ? 'new' : 'market-cap',
-  );
+  const [sort, setSort] = useState<ClubSort>('trending');
+  const { tokens, isLoading, apiError, ranked } = useAllFanClubs(sort);
   const markets = useMarkets(tokens.map((t) => t.address));
   const m = (a: string) => markets.data?.[a.toLowerCase()];
+  const { enabled: live } = useIndexer();
 
   const [kind, setKind] = useState<'all' | SubjectKind>('all');
 
   const sorted = useMemo(() => {
     const list = tokens.filter((t) => kind === 'all' || t.kind === kind);
-    if (sort === 'new')
-      list.sort(
-        (a, b) =>
-          Date.parse(b.createdAt ?? '0') - Date.parse(a.createdAt ?? '0'),
-      );
-    else if (sort === 'gainers')
-      list.sort(
-        (a, b) =>
-          (m(b.address)?.change24h ?? -1e9) - (m(a.address)?.change24h ?? -1e9),
-      );
-    else
-      list.sort(
-        (a, b) =>
-          (m(b.address)?.marketCap ?? b.marketCap ?? 0) -
-          (m(a.address)?.marketCap ?? a.marketCap ?? 0),
-      );
-    return list;
+    return ranked ? list : rankClubs(list, m, sort);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokens, sort, kind, markets.data]);
+  }, [tokens, sort, kind, ranked, markets.data]);
 
   const totals = useMemo(() => {
     let mcap = 0;
@@ -118,8 +114,10 @@ export default function FanClubs() {
         ))}
       </section>
 
+      <ActivityFeed />
+
       <div className="page__head">
-        <h2>All fan clubs</h2>
+        <h2>{live && <span className="live-dot" />} All fan clubs</h2>
         <div className="lp-filters">
           <div className="segmented">
             {(
@@ -139,13 +137,7 @@ export default function FanClubs() {
             ))}
           </div>
           <div className="segmented">
-            {(
-              [
-                ['market-cap', 'Top'],
-                ['new', 'New'],
-                ['gainers', 'Gainers'],
-              ] as [Sort, string][]
-            ).map(([k, label]) => (
+            {SORTS.map(([k, label]) => (
               <button
                 key={k}
                 className={sort === k ? 'is-active' : ''}
@@ -160,8 +152,9 @@ export default function FanClubs() {
 
       {apiError && (
         <p className="notice">
-          The Clanker index is unreachable right now, so only fan clubs launched
-          from this device are shown.
+          {live
+            ? 'Live market data is temporarily unavailable. Showing what we have.'
+            : 'The Clanker index is unreachable right now, so only fan clubs launched from this device are shown.'}
         </p>
       )}
 
@@ -178,7 +171,7 @@ export default function FanClubs() {
               key={t.address}
               token={t}
               market={m(t.address)}
-              rank={sort === 'market-cap' ? i + 1 : undefined}
+              rank={sort === 'top' || sort === 'trending' ? i + 1 : undefined}
             />
           ))}
         </div>

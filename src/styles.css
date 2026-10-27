@@ -427,12 +427,12 @@ h3 {
 .logo {
   display: flex;
   align-items: center;
-  gap: 9px;
-  color: var(--gold);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: 0.12em;
+  flex-shrink: 0;
+}
+.logo img {
+  display: block;
+  height: 30px;
+  width: auto;
 }
 .nav__links {
   display: flex;
@@ -2347,6 +2347,10 @@ main {
     font-size: 14px;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+  .nav__mobile a {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .nav__inner {
     gap: 12px;

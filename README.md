@@ -36,6 +36,7 @@ Fancast keys every real person to their **Wikidata item** (Q-id). Each catalog p
 - **Search:** the **All** tab merges people and artists so each person appears once (e.g. "Acting · Music").
 - **Efficient:** lookups are batched into one SPARQL query per screen, cached a day at the CDN by `/api/identity` (with a proper User-Agent), and a week in the browser. Without the API (static hosts) the browser queries Wikidata directly. If Wikidata is unavailable, pages still work, just unlinked.
 
+## Live market data (indexer)
 
 Once trading picks up, Fancast tracks every club itself instead of asking outside sites on each page view.
 
@@ -67,6 +68,10 @@ ENV
 npm run dev                             # /api routes are served by Vite in dev
 curl -X POST localhost:8545/admin/tick  # simulate more trades
 ```
+
+## Brand
+
+Logo files live in `public/brand/`: the fan mark (five blades opening from one point), the primary lockup for dark and light backgrounds, a stacked lockup, and one-color white/black versions. App icons (`favicon.svg`, `favicon.ico`, `icon-192/512.png`, maskable, `apple-touch-icon.png`) and the 1200×630 social card (`og.png`) are in `public/`. Colors: ink `#0E0E13`, bone `#F4F2EE`, gold `#F5C451`, deep gold `#C98A14`. The wordmark is Bricolage Grotesque ExtraBold (SIL OFL), outlined.
 
 ## Getting started
 

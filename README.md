@@ -4,6 +4,17 @@
 
 Fancast is a streaming-style browser for movies, TV shows and the people who make them (TMDB) plus music artists (Deezer), with an on-chain **Fan Club launchpad**: anyone can launch a fan token for any film, show, star or artist through the [Clanker](https://www.clanker.world) v4 factory, with its own Uniswap v4 pool on Base.
 
+## Site map
+
+Two spaces share one account, wallet, search and My List. Switch between them with the toggle next to the logo.
+
+| Space | Sections |
+| --- | --- |
+| **Fan Clubs** | Home · Launchpad · Titles (Movies, TV shows) · People (Actors & creators, Music artists) · Teams *(soon)* |
+| **Watch** *(soon)* | Public-domain films to stream or keep for a fee |
+
+Search, **Docs** (`/docs`), My List and the wallet sit on the right of the top bar. The structure lives in `src/lib/spaces.ts`: adding a section, or giving Watch its own tabs, is a one-line change there. Below 1100px, the space toggle and section tabs move to a second, scrollable row.
+
 ## Features
 
 - **Streaming UI** — rotating hero with trailers, horizontal shelves (Trending, Top 10, Now Playing, Popular, Coming Soon), hover-expand tiles, detail pages with cast and recommendations, infinite-scroll browse and search, and My List (saved locally; favorites from the old version carry over).

@@ -7,6 +7,7 @@ import {
   isCategory,
   type Category,
 } from '../lib/tmdb';
+import SectionTabs from '../components/SectionTabs';
 
 export default function Browse() {
   const { category } = useParams();
@@ -25,6 +26,7 @@ function BrowseCategory({ category }: { category: Category }) {
 
   return (
     <div className="page">
+      <SectionTabs section="titles" />
       <div className="page__head">
         <h1>{CATEGORIES[category].title}</h1>
         <nav className="pills">

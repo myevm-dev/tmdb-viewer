@@ -16,6 +16,13 @@ const TvDetail = lazy(() => import('./pages/TvDetail'));
 const Music = lazy(() => import('./pages/Music'));
 const ArtistDetail = lazy(() => import('./pages/ArtistDetail'));
 const PersonDetail = lazy(() => import('./pages/PersonDetail'));
+const Docs = lazy(() => import('./pages/Docs'));
+const Watch = lazy(() =>
+  import('./pages/ComingSoon').then((m) => ({ default: m.Watch })),
+);
+const Teams = lazy(() =>
+  import('./pages/ComingSoon').then((m) => ({ default: m.Teams })),
+);
 
 function TopLoader() {
   const fetching = useIsFetching();
@@ -62,6 +69,9 @@ export default function App() {
               element={<Navigate to="/my-list" replace />}
             />
             <Route path="/fan-clubs" element={<FanClubs />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/watch" element={<Watch />} />
+            <Route path="/docs" element={<Docs />} />
             <Route
               path="*"
               element={
@@ -93,7 +103,9 @@ export default function App() {
           <a href="https://www.clanker.world" target="_blank" rel="noreferrer">
             Clanker
           </a>{' '}
-          on Uniswap v4. Fan tokens are not investments.
+          on Uniswap v4. Fan tokens are not investments.{' '}
+          <Link to="/docs">Docs</Link> ·{' '}
+          <Link to="/docs#risks">Risks</Link>
         </span>
       </footer>
       <WalletModal />

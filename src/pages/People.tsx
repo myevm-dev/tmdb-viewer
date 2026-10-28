@@ -7,6 +7,7 @@ import {
   isPeopleCategory,
   type PeopleCategory,
 } from '../lib/tmdb';
+import SectionTabs from '../components/SectionTabs';
 
 export default function People() {
   const { category = 'popular' } = useParams();
@@ -26,6 +27,7 @@ function PeopleCategoryPage({ category }: { category: PeopleCategory }) {
 
   return (
     <div className="page">
+      <SectionTabs section="people" />
       <div className="page__head">
         <h1>{PEOPLE_CATEGORIES[category].title}</h1>
         <nav className="pills">

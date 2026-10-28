@@ -7,6 +7,7 @@ import {
   isTvCategory,
   type TvCategory,
 } from '../lib/tmdb';
+import SectionTabs from '../components/SectionTabs';
 
 export default function Shows() {
   const { category } = useParams();
@@ -25,6 +26,7 @@ function ShowsCategory({ category }: { category: TvCategory }) {
 
   return (
     <div className="page">
+      <SectionTabs section="titles" />
       <div className="page__head">
         <h1>{TV_CATEGORIES[category].title}</h1>
         <nav className="pills">

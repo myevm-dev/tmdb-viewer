@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArtistCard } from '../components/PersonCard';
 import { getChartArtists, getGenres } from '../lib/deezer';
+import SectionTabs from '../components/SectionTabs';
 
 /** Top artists chart, filterable by genre (Deezer). */
 export default function Music() {
@@ -22,6 +23,7 @@ export default function Music() {
 
   return (
     <div className="page">
+      <SectionTabs section="people" />
       <div className="page__head">
         <h1>{genreName ? `Top ${genreName} Artists` : 'Top Artists'}</h1>
       </div>
